@@ -107,10 +107,8 @@ void routing_thread::run() {
     while(1) {
         if(!sys.isEmpty()) {
             system(sys.toStdString().c_str());
-            qDebug() << "pcap is running";
             sys.clear();
             system("arp -a >/dev/null");
-            if(!list.isEmpty()) send_broad(packet, pkthdr->len);
         }
         while(pcap_next_ex(pcap, &pkthdr, (const u_char**)&packet) > 0) {
             eth = (struct libnet_ethernet_hdr *)packet;

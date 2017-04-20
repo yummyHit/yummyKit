@@ -17,7 +17,7 @@ scanning::~scanning() {
 
 void scanning::on_StartBtn_clicked() {
     thread_stop = false;
-    if(ui->scanning_text->text() == "Input your Router's IP Address") QMessageBox::warning(this, "Warning!!", "If you don't know how to use it,\nyou can click 'Help' button.");
+    if(ui->scanning_text->text() == "Input your Router's IP Address" || ui->scanning_text->text().isEmpty()) QMessageBox::warning(this, "Warning!!", "If you don't know how to use it,\nyou can click 'Help' button.");
     else {
         sys_ip = ui->scanning_text->text();
         if(sys.isEmpty()) {
@@ -26,18 +26,18 @@ void scanning::on_StartBtn_clicked() {
             th = new routing_thread();
         }
         else th = new routing_thread();
+        connect(th, SIGNAL(setList(QStringList)), this, SLOT(rt_getList(QStringList)));
+        connect(th, SIGNAL(setLength(QStringList)), this, SLOT(rt_getLength(QStringList)));
+        connect(th, SIGNAL(setMacPacket(QStringList)), this, SLOT(rt_getMacPacket(QStringList)));
+        connect(th, SIGNAL(packet_info(u_char*)), this, SLOT(rt_getPacket_info(u_char*)));
+        connect(th, SIGNAL(dump_pcap(pcap_t*)), this, SLOT(rt_getDump_pcap(pcap_t*)));
         th->set_sys(sys, sys_ip);
         th->start();
         md = new QStringListModel();
-        connect(th, SIGNAL(setList(QStringList)), this, SLOT(rt_getList(QStringList)));
     }
 }
 
 void scanning::on_StopBtn_clicked() {
-    connect(th, SIGNAL(setLength(QStringList)), this, SLOT(rt_getLength(QStringList)));
-    connect(th, SIGNAL(setMacPacket(QStringList)), this, SLOT(rt_getMacPacket(QStringList)));
-    connect(th, SIGNAL(packet_info(u_char*)), this, SLOT(rt_getPacket_info(u_char*)));
-    connect(th, SIGNAL(dump_pcap(pcap_t*)), this, SLOT(rt_getDump_pcap(pcap_t*)));
     stopThread();
 }
 
