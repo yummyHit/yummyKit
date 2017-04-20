@@ -26,18 +26,18 @@ void scanning::on_StartBtn_clicked() {
             th = new routing_thread();
         }
         else th = new routing_thread();
-        connect(th, SIGNAL(setList(QStringList)), this, SLOT(rt_getList(QStringList)));
-        connect(th, SIGNAL(setLength(QStringList)), this, SLOT(rt_getLength(QStringList)));
-        connect(th, SIGNAL(setMacPacket(QStringList)), this, SLOT(rt_getMacPacket(QStringList)));
-        connect(th, SIGNAL(packet_info(u_char*)), this, SLOT(rt_getPacket_info(u_char*)));
-        connect(th, SIGNAL(dump_pcap(pcap_t*)), this, SLOT(rt_getDump_pcap(pcap_t*)));
         th->set_sys(sys, sys_ip);
         th->start();
         md = new QStringListModel();
+        connect(th, SIGNAL(setList(QStringList)), this, SLOT(rt_getList(QStringList)));
     }
 }
 
 void scanning::on_StopBtn_clicked() {
+    connect(th, SIGNAL(setLength(QStringList)), this, SLOT(rt_getLength(QStringList)));
+    connect(th, SIGNAL(setMacPacket(QStringList)), this, SLOT(rt_getMacPacket(QStringList)));
+    connect(th, SIGNAL(packet_info(u_char*)), this, SLOT(rt_getPacket_info(u_char*)));
+    connect(th, SIGNAL(dump_pcap(pcap_t*)), this, SLOT(rt_getDump_pcap(pcap_t*)));
     stopThread();
 }
 
@@ -46,15 +46,16 @@ void scanning::on_HelpBtn_clicked() {
 }
 
 void scanning::on_SelectBtn_clicked() {
-    if(thread_stop) {
+    if(!ui->listView->currentIndex().isValid() || !thread_stop) QMessageBox::information(this, "Warning", "You must select 1 IP address at least.\nIf you don't know how to use it, please click help button.");
+    else {
         stopThread();
         emit rt_setMacPacket(rt_macPack);
         emit rt_packet_info(rt_packet_infov);
         emit rt_dump_pcap(rt_d_pcap);
+        emit rt_setList(rt_ip_list, ui->listView->currentIndex().row());
+        emit rt_setLength(rt_len);
+        this->close();
     }
-    this->close();
-    emit rt_setList(rt_ip_list, ui->listView->currentIndex().row());
-    emit rt_setLength(rt_len);
 }
 
 void scanning::on_CancelBtn_clicked() {

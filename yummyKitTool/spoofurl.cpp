@@ -37,11 +37,13 @@ void spoofUrl::on_GoUrlBtn_clicked()
 void spoofUrl::on_StopBtn_clicked()
 {
     this->allStop();
+    this->finished(1);
 }
 
 void spoofUrl::on_CancelBtn_clicked()
 {
     this->allStop();
+    this->finished(1);
     this->close();
 }
 
