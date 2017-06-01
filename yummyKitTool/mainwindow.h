@@ -27,6 +27,7 @@ public slots:
     void main_getMacPacket(QStringList);
     void main_getPacket_info(u_char*);
     void main_getDump_pcap(pcap_t*);
+    void main_getCancel(bool);
 
 private slots:
     void on_actionIP_Scan_triggered();

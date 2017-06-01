@@ -41,7 +41,8 @@ HEADERS  += mainwindow.h \
     spoofurl.h \
     routing_thread.h \
     relay_falsify.h \
-    relay_spoof.h
+    relay_spoof.h \
+    statusq.h
 
 FORMS    += mainwindow.ui \
     scanning.ui \

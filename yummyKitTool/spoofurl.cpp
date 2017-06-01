@@ -20,6 +20,7 @@ spoofUrl::spoofUrl(QWidget *parent) :
     ui(new Ui::spoofUrl)
 {
     ui->setupUi(this);
+    ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
 spoofUrl::~spoofUrl()

@@ -17,6 +17,7 @@ public:
 
 signals:
     void setList(QStringList);
+    void setHostName(QStringList);
     void setLength(QStringList);
     void setMacPacket(QStringList);
     void packet_info(u_char*);

@@ -36,6 +36,7 @@ private slots:
 
 public slots:
     void rt_getList(QStringList);
+    void rt_getHostName(QStringList);
     void rt_getLength(QStringList);
     void rt_getMacPacket(QStringList);
     void rt_getPacket_info(u_char*);
@@ -47,10 +48,12 @@ signals:
     void rt_setMacPacket(QStringList);
     void rt_packet_info(u_char*);
     void rt_dump_pcap(pcap_t*);
+    void rt_cancel(bool);
 
 private:
     Ui::scanning *ui;
-    QStringListModel *md;
+    QStandardItemModel *simod;
+    QStandardItem *md_ip, *md_host;
     QString sys, sys_ip;
     void stopThread();
 };
