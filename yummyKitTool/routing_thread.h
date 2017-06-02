@@ -5,6 +5,7 @@
 #include <QtCore>
 #include <QtWidgets>
 #include <pcap.h>
+#include "hostname.h"
 
 class routing_thread : public QThread
 {
@@ -15,9 +16,10 @@ public:
     void set_stop(bool);
     void set_sys(QString, QString);
 
+    hostname *host_name;
+
 signals:
     void setList(QStringList);
-    void setHostName(QStringList);
     void setLength(QStringList);
     void setMacPacket(QStringList);
     void packet_info(u_char*);

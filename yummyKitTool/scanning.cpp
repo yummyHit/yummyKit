@@ -1,5 +1,7 @@
 #include "scanning.h"
 #include "ui_scanning.h"
+#include <iostream>
+#include <fstream>
 
 QStringList rt_ip_list, rt_len, rt_macPack;
 u_char *rt_packet_infov;
@@ -14,6 +16,21 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->tableView->setModel(simod);
+    system("cat /etc/environment | grep LANG=\\\"\"ko_KR.EUC-KR\\\"\" > ./nbtscan_log.txt");
+    char buf[100];
+    std::ifstream fin("./nbtscan_log.txt");
+    while(fin >> buf) {}
+    if(!strcmp(buf, "")) {
+        system("sudo apt-get install language-pack-ko* >/dev/null");
+        system("sudo locale-gen ko_KR.EUC-KR >/dev/null");
+        system("echo LANG=\\\"\"ko_KR.EUC-KR\\\"\" >> /etc/environment");
+        system("echo LANG=\\\"\"ko_KR.UTF-8\\\"\" >> /etc/environment");
+        system("echo LANGUAGE=\\\"\"ko_KR:ko:en_GB:en\\\"\" >> /etc/environment");
+        system("echo LANG=\\\"\"ko_KR.EUC-KR\\\"\" >> /etc/profile");
+        system("echo LANG=\\\"\"ko_KR.EUC-KR\\\"\" >> /etc/default/locale");
+        system("echo LANG=\\\"\"ko_KR.UTF-8\\\"\" >> /etc/default/locale");
+        system("echo LANGUAGE=\\\"\"ko_KR.UTF-8\\\"\" >> /etc/default/locale");
+    }
 }
 
 scanning::~scanning() {
@@ -25,6 +42,7 @@ void scanning::on_StartBtn_clicked() {
     QString scan_ip = ui->scanning_text->text();
     QChar check = *(scan_ip.unicode());
     if(check.isNull() || !check.isDigit()) QMessageBox::warning(this, "Warning!!", "If you don't know how to use it,\nyou can click 'Help' button.");
+    else if(!sys_ip.isEmpty() && th->isRunning()) QMessageBox::warning(this, "Warning!!", "Scanning is already running!!\nIf you want new scan, first click stop button.\nAnd click start button.");
     else {
         sys_ip = scan_ip;
         if(sys.isEmpty()) {
@@ -36,11 +54,11 @@ void scanning::on_StartBtn_clicked() {
         th->set_sys(sys, sys_ip);
         th->start();
         connect(th, SIGNAL(setList(QStringList)), this, SLOT(rt_getList(QStringList)));
-        connect(th, SIGNAL(setHostName(QStringList)), this, SLOT(rt_getHostName(QStringList)));
         connect(th, SIGNAL(setLength(QStringList)), this, SLOT(rt_getLength(QStringList)));
         connect(th, SIGNAL(setMacPacket(QStringList)), this, SLOT(rt_getMacPacket(QStringList)));
         connect(th, SIGNAL(packet_info(u_char*)), this, SLOT(rt_getPacket_info(u_char*)));
         connect(th, SIGNAL(dump_pcap(pcap_t*)), this, SLOT(rt_getDump_pcap(pcap_t*)));
+        connect(th->host_name, SIGNAL(setHostName(QStringList)), this, SLOT(rt_getHostName(QStringList)));
     }
 }
 

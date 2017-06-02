@@ -1,6 +1,5 @@
 #include "falsify.h"
 #include "ui_falsify.h"
-#include <pcap.h>
 
 falsify::falsify(QWidget *parent) :
     QDialog(parent),

@@ -33,7 +33,8 @@ SOURCES += main.cpp\
     spoofurl.cpp \
     routing_thread.cpp \
     relay_falsify.cpp \
-    relay_spoof.cpp
+    relay_spoof.cpp \
+    hostname.cpp
 
 HEADERS  += mainwindow.h \
     scanning.h \
@@ -42,7 +43,8 @@ HEADERS  += mainwindow.h \
     routing_thread.h \
     relay_falsify.h \
     relay_spoof.h \
-    statusq.h
+    statusq.h \
+    hostname.h
 
 FORMS    += mainwindow.ui \
     scanning.ui \

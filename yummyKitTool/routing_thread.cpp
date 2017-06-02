@@ -1,18 +1,11 @@
 #include "routing_thread.h"
-#include "statusq.h"
+//#include "statusq.h"
 #include <QCoreApplication>
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-#include <net/if.h>
-#include <unistd.h>
 #include <netdb.h>
 #include <libnet.h>
 #define PROMISCUOUS 1
@@ -21,14 +14,14 @@
 void mac_filter(char *get, u_char *my, int size);
 u_char filter(char *get, u_char *my);
 void ip_filter(char *get, u_char *my);
-void host_filter(u_char*);
+
 int flag_check(u_char *a, u_char *b, int size);
 void send_broad(u_char *p, int l);
 u_char getHex(int i);
 QString getString(u_char *s);
 QString getMacString(u_char *s);
 
-QStringList list, hostName, length, macv;
+QStringList list, length, macv;
 QString sys, sys_ipv;
 pcap_t *pcap;
 
@@ -37,7 +30,6 @@ bool pcap_stop;
 u_char *pkt;
 
 u_char my_mac[6] = {0,}, my_ip[4] = {0,};
-//char local_ip[15] = {0,};
 u_char router_mac[6] = {0,}, router_ip[4] = {0,};
 u_char victim_mac[256][6] = {0,}, victim_ip[256][4] = {0,};
 int broad_cnt = 0;
@@ -83,6 +75,7 @@ struct list_item* new_list_item(unsigned long content);
 routing_thread::routing_thread(QObject *parent) : QThread(parent)
 {
     pcap_stop = false;
+    host_name = new hostname();
 }
 
 void routing_thread::run() {
@@ -125,7 +118,10 @@ void routing_thread::run() {
     if (pcap_compile(pcap, &filter, "arp", 0, maskp) == -1) perror("pcap_compile");
     if (pcap_setfilter(pcap, &filter) == -1) perror("pcap_setfilter");
 //    int pcap_fd = pcap_get_selectable_fd(pcap_handler);
-    while(!pcap_stop) {
+
+    host_name->start();
+
+    while(!pcap_stop && !host_name->host_stop) {
         bool break_point = false;
         if(!sys.isEmpty()) {
             system(sys.toStdString().c_str());
@@ -140,12 +136,11 @@ void routing_thread::run() {
                 for(i = 0; i < ETHER_ADDR_LEN; i++) *(router_mac+i) = *(packet + ETHER_ADDR_LEN + i);
                 macv << getMacString(router_mac) << getMacString(my_mac);
                 list << getString(router_ip) << getString(my_ip);
-                host_filter(router_ip);
-                host_filter(my_ip);
                 length.append(QString::number(pkthdr->len));
                 pkt = packet;
                 emit setList(list);
-                emit setHostName(hostName);
+                host_name->getArgu(router_ip);
+                host_name->getArgu(my_ip);
                 send_broad(packet, pkthdr->len);
             }
 
@@ -162,10 +157,9 @@ void routing_thread::run() {
                 macv << getMacString(*(victim_mac+broad_cnt));
                 for(i = 0; i < 4; i++) *(*(victim_ip+broad_cnt)+i) = *(arpheader->spa+i);		// save to victim ip address
                 list << getString(*(victim_ip+broad_cnt));
-                host_filter(*(victim_ip+broad_cnt));
                 length.append(QString::number(pkthdr->len));
                 emit setList(list);
-                emit setHostName(hostName);
+                host_name->getArgu(*(victim_ip+broad_cnt));
                 broad_cnt++;
                 if(broad_cnt%10 == 0) send_broad(packet, pkthdr->len);
             }
@@ -175,10 +169,9 @@ void routing_thread::run() {
                 macv << getMacString(*(victim_mac+broad_cnt));
                 for(i = 0; i < 4; i++) *(*(victim_ip+broad_cnt)+i) = *(arpheader->spa+i);
                 list << getString(*(victim_ip+broad_cnt));
-                host_filter(*(victim_ip+broad_cnt));
                 length.append(QString::number(pkthdr->len));
                 emit setList(list);
-                emit setHostName(hostName);
+                host_name->getArgu(*(victim_ip+broad_cnt));
                 broad_cnt++;
                 if(broad_cnt%10 == 0) send_broad(packet, pkthdr->len);
             }
@@ -188,6 +181,7 @@ void routing_thread::run() {
     emit setMacPacket(macv);
     emit packet_info(pkt);
     emit dump_pcap(pcap);
+    if(host_name->isRunning()) host_name->hostStop(true);
 }
 
 void mac_filter(char *get, u_char *my, int size) {	// mac address or ip address filter
@@ -243,83 +237,7 @@ void ip_filter(char *get, u_char *my) {
     mac_filter(tmp.toHex().data(), my, tmp.size());
 }
 
-void host_filter(u_char *ip) {
-    struct sockaddr_in host_addr;
-    char host_buf[NI_MAXHOST] = {0,};
-//    struct hostent *hptr;
-    char host_tmp[15] = {0,};
-    for(int i = 0, j = 0; i < 4; i++) {
-        if((ip[i] / 100) != 0) {
-            host_tmp[j] = (ip[i] / 100) + '0';
-            host_tmp[j+1] = (ip[i] / 10) - ((ip[i] / 100) * 10) + '0';
-            host_tmp[j+2] = ip[i] - ((ip[i] / 10) * 10) + '0';
-            host_tmp[j+3] = '.';
-            j += 4;
-        }
-        else if((ip[i] / 10) != 0) {
-            host_tmp[j] = ip[i] / 10 + '0';
-            host_tmp[j+1] = ip[i] - ((ip[i] / 10) * 10) + '0';
-            host_tmp[j+2] = '.';
-            j += 3;
-        }
-        else {
-            host_tmp[j] = ip[i] + '0';
-            if(i != 3) host_tmp[j+1] = '.';
-            j += 2;
-        }
-    }
-/*
-    // I wanna get NetBIOS name. But it is very difficult work!
-    // I try to use many function such as gethostbyaddr() / getaddrinfo() / getnameinfo() / gethostname() / gethostbyname()
-    // And I try to use many argument such as NI_NAMEREQD / NI_NOFQDN / NI_IDN / NI_DGRAM / NI_NUMERICHOST / AF_NETBEUI / AF_LLC
-    memset(&host_addr, 0, sizeof(host_addr));
-    host_addr.sin_family = AF_INET;
-    host_addr.sin_addr.s_addr = inet_addr(host_tmp);
-    hptr = gethostbyaddr((char *)&host_addr.sin_addr, 4, AF_INET);
-    if(hptr == NULL) {
-        switch (h_errno) {
-                case HOST_NOT_FOUND:
-                    hostName << "HOST_NOT_FOUND";
-                    break;
-                case NO_ADDRESS:
-                    hostName << "NO_ADDRESS";
-                    break;
-                case NO_RECOVERY:
-                    hostName << "NO_RECOVERY";
-                    break;
-                case TRY_AGAIN:
-                    hostName << "TRY_AGAIN";
-                    break;
-        }
-    }
-    else hostName << hptr->h_name;
-*/
-    memset(&host_addr, 0, sizeof(host_addr));
-    inet_pton(AF_INET, host_tmp, &(host_addr.sin_addr));
-    host_addr.sin_family = AF_INET;
-//    host_addr.sin_addr.s_addr = inet_addr(host_tmp);
-//    host_addr.sin_port = 80;
-    int test;
-    if((test = getnameinfo((struct sockaddr *)&host_addr, sizeof(host_addr), host_buf, sizeof(host_buf), NULL, 0, NI_NAMEREQD)) != 0) {
-        perror("getnameinfo : ");
-//        qDebug() <<  gai_strerror(test);
-        switch (h_errno) {
-                case HOST_NOT_FOUND:
-                    hostName << "HOST_NOT_FOUND";
-                    break;
-                case NO_ADDRESS:
-                    hostName << "NO_ADDRESS";
-                    break;
-                case NO_RECOVERY:
-                    hostName << "NO_RECOVERY";
-                    break;
-                case TRY_AGAIN:
-                    hostName << "TRY_AGAIN";
-                    break;
-        }
-    }
-    else hostName << host_buf;
-}
+
 
 int flag_check(u_char *a, u_char *b, int size) {	// compare address and check flags
     int value = 0;
@@ -391,6 +309,8 @@ void routing_thread::set_sys(QString s, QString ip_s) {
     sys = s;
     sys_ipv = ip_s;
 }
+
+
 
 // It is part of nbtscan command. parse_response() function in statusq.c, nb_host_info structure in statusq.h
 // This way use select() function, UDP protocol, recvfrom() to destination address after bind() to local address
