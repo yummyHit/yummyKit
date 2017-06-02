@@ -16,21 +16,6 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->tableView->setModel(simod);
-    system("cat /etc/environment | grep LANG=\\\"\"ko_KR.EUC-KR\\\"\" > ./nbtscan_log.txt");
-    char buf[100];
-    std::ifstream fin("./nbtscan_log.txt");
-    while(fin >> buf) {}
-    if(!strcmp(buf, "")) {
-        system("sudo apt-get install language-pack-ko* >/dev/null");
-        system("sudo locale-gen ko_KR.EUC-KR >/dev/null");
-        system("echo LANG=\\\"\"ko_KR.EUC-KR\\\"\" >> /etc/environment");
-        system("echo LANG=\\\"\"ko_KR.UTF-8\\\"\" >> /etc/environment");
-        system("echo LANGUAGE=\\\"\"ko_KR:ko:en_GB:en\\\"\" >> /etc/environment");
-        system("echo LANG=\\\"\"ko_KR.EUC-KR\\\"\" >> /etc/profile");
-        system("echo LANG=\\\"\"ko_KR.EUC-KR\\\"\" >> /etc/default/locale");
-        system("echo LANG=\\\"\"ko_KR.UTF-8\\\"\" >> /etc/default/locale");
-        system("echo LANGUAGE=\\\"\"ko_KR.UTF-8\\\"\" >> /etc/default/locale");
-    }
 }
 
 scanning::~scanning() {
@@ -71,7 +56,8 @@ void scanning::on_HelpBtn_clicked() {
 }
 
 void scanning::on_SelectBtn_clicked() {
-    if(!ui->tableView->currentIndex().isValid() || !thread_stop) QMessageBox::information(this, "Warning", "You must select 1 IP address at least.\nIf you don't know how to use it, please click help button.");
+    if(!ui->tableView->currentIndex().isValid()) QMessageBox::information(this, "Warning", "You must select 1 IP address at least.\nIf you don't know how to use it, please click help button.");
+    else if(!thread_stop) QMessageBox::information(this, "Warning", "Scanning is running!!\nIf you want select button, first click stop button.\nOr wait a second. Then you can click select button.");
     else {
         stopThread();
         emit rt_setMacPacket(rt_macPack);

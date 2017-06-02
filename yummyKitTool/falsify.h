@@ -30,7 +30,7 @@ private slots:
 
 private:
     Ui::falsify *ui;
-    QString getIP, getRouterIP, getLen, getRouterMac, getMyMac, getVictimMac;
+    QString getIP, getMyIP, getRouterIP, getLen, getRouterMac, getMyMac, getVictimMac;
     u_char *pkt;
     pcap_t *dump_p;
 };

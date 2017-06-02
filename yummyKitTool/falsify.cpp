@@ -35,13 +35,14 @@ void falsify::on_CancelBtn_clicked()
 void falsify::pkt_getAll(QString a, QString b, QString c, QString d, QString e, QString f, QString g, u_char *h, pcap_t *i) {
     getIP = a;
     getRouterIP = b;
+    getMyIP = c;
     getLen = d;
     getRouterMac = e;
     getMyMac = f;
     getVictimMac = g;
     pkt = h;
     dump_p = i;
-    ui->srcAddressEdit->setText(c);
+    ui->srcAddressEdit->setText(getMyIP);
     ui->dstAddressEdit->setText(getIP);
     ui->routerMacEdit->setText(getRouterMac);
     ui->myMacEdit->setText(getMyMac);

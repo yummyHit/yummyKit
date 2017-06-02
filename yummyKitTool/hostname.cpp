@@ -16,7 +16,7 @@ QString getHex2String(u_char *s);
 
 hostname::hostname(QObject *parent) : QThread(parent)
 {
-    host_stop = false;
+    this->host_stop = false;
     system("sudo nbtscan | grep Usage > ./nbtscan_log.txt");
     char buf[10];
     std::ifstream fin("./nbtscan_log.txt");
@@ -41,7 +41,8 @@ void hostname::run() {
             nbt.append(host_ipList.at(i));
             nbt.append(" | grep -a '.' | awk '{ print $2 }' > ./nbtscan_log.txt");
             system(nbt.toStdString().c_str());
-            std::ifstream fin("./nbtscan_log.txt");
+            system("iconv -c -f euc-kr -t utf-8 ./nbtscan_log.txt > ./nbtscan.txt");
+            std::ifstream fin("./nbtscan.txt");
             while(fin >> buf) {}
             if(!strncmp(buf, "address", 7)) host_filter(ip);
             else hostName << buf;
@@ -59,7 +60,7 @@ void hostname::run() {
         }
     }
     qDebug() << "hostname finished!!";
-    system("sudo rm ./nbtscan_log.txt");
+    system("sudo rm ./nbtscan_log.txt ./nbtscan.txt");
 }
 
 void host_filter(u_char *ip) {
