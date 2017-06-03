@@ -150,11 +150,12 @@ void getUrl(u_char *packet, int len) {
                 }
                 i -= (tmp + imsi.length() - 1);
                 while(true) {
-                    if(tempStr.at(i) == 'G' && tempStr.at(i+1) == 'E' && tempStr.at(i+2) == 'T') {
+                    if(tempStr.at(i) == 'G' && tempStr.at(i+1) == 'E' && tempStr.at(i+2) == 'T' && tempStr.at(i+5) != ' ') {
                         i += 4;
                         while(true) {
                             imsi.append(tempStr.at(i++));
-                            if((tempStr.at(i) == 'H' && tempStr.at(i+1) == 'T' && tempStr.at(i+2) == 'T' && tempStr.at(i+3) == 'P' && tempStr.at(i+4) == '/') || tempStr.length() == i) break;
+                            if(tempStr.at(i) == '/' && tempStr.at(i+1) == ' ') break;
+                            else if((tempStr.at(i+1) == 'H' && tempStr.at(i+2) == 'T' && tempStr.at(i+3) == 'T' && tempStr.at(i+4) == 'P' && tempStr.at(i+5) == '/') || tempStr.length() == i) break;
                         }
                     }
                     i++;
@@ -163,6 +164,7 @@ void getUrl(u_char *packet, int len) {
                 if(!url_list.isEmpty()) for(tmp = 0; tmp < url_list.length(); tmp++) if(url_list.at(tmp) == imsi) cnt = 100;
                 if(cnt != 100) {
                     get_broad_cnt++;
+                    imsi.detach();
                     url_list.append(imsi);
                 }
             }

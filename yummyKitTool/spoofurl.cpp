@@ -23,7 +23,10 @@ spoofUrl::~spoofUrl()
 }
 //Session hijacking <-- cookie inject
 void spoofUrl::on_GoUrlBtn_clicked()
-{/*
+{
+    QString url = ui->listView->currentIndex().data().toString();
+    QDesktopServices::openUrl(url);
+    /*
     for(int i = 0; i < spoof_dataList.length(); i++) {
         spoof_dataList.at(i);
     }*/

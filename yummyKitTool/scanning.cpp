@@ -104,6 +104,7 @@ void scanning::rt_getPacket_info(u_char *packet) {
 
 void scanning::rt_getDump_pcap(pcap_t *p) {
     rt_d_pcap = p;
+    thread_stop = true;
     QMessageBox::information(this, "Success!!", "IP Scan is finish successfully!!");
 }
 

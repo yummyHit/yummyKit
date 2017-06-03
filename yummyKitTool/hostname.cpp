@@ -32,10 +32,13 @@ hostname::hostname(QObject *parent) : QThread(parent)
 
 void hostname::run() {
     QString nbt;
-    int i = 0;
+    int i = 1;
     char buf[256];
     while(1) {
-        if(!host_ipList.isEmpty()) {
+        if(!host_ipList.isEmpty() && host_ipList.length() == 1) {
+            hostName << "Router";
+            emit setHostName(hostName);
+        } else if (!host_ipList.isEmpty() && host_ipList.length() > 1) {
             memset(buf, 0, 256);
             nbt.append("sudo nbtscan ");
             nbt.append(host_ipList.at(i));
