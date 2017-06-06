@@ -14,7 +14,7 @@ int flag_check_get(u_char *a, u_char *b);
 void getUrl(u_char *packet, int len);
 void sendUrl(u_char *packet, int len);
 
-QStringList url_list, dataList[100];
+QStringList url_list, dataList;
 int get_broad_cnt = 0, test_cnt = 0;
 
 relay_spoof::relay_spoof(QObject *parent) : QThread(parent)
@@ -77,6 +77,7 @@ void relay_spoof::run() {
         }
         if(get_stop) break;
     }
+    emit data_list(dataList);
     emit spoof_fin(true);
 }
 
@@ -139,7 +140,7 @@ void getUrl(u_char *packet, int len) {
     }
     i = 0; tmp = 0;
     if(!tempStr.isEmpty()) {
-        qDebug() << "#####getUrl : " << tempStr;
+//        qDebug() << "#####getUrl : " << tempStr;
         while(true) {
             if(tempStr.at(i) == 'H' && tempStr.at(i+1) == 'o' && tempStr.at(i+2) == 's' && tempStr.at(i+3) == 't' && tempStr.at(i+4) == ':') {
                 i += 6;
@@ -158,8 +159,7 @@ void getUrl(u_char *packet, int len) {
                             else if((tempStr.at(i+1) == 'H' && tempStr.at(i+2) == 'T' && tempStr.at(i+3) == 'T' && tempStr.at(i+4) == 'P' && tempStr.at(i+5) == '/') || tempStr.length() == i) break;
                         }
                     }
-                    i++;
-                    if(tempStr.length() == i) break;
+                    else if(tempStr.length() == (++i)) break;
                 }
                 if(!url_list.isEmpty()) for(tmp = 0; tmp < url_list.length(); tmp++) if(url_list.at(tmp) == imsi) cnt = 100;
                 if(cnt != 100) {
@@ -168,20 +168,33 @@ void getUrl(u_char *packet, int len) {
                     url_list.append(imsi);
                 }
             }
-            i++;
-            if(tempStr.length() <=  i) break;
+            if(tempStr.length() <= (++i)) break;
             else tmp = i;
         }
+        i = 0; imsi.clear();
+        if(tempStr.contains("Cookie: ")) {
+            while(true) {
+                if(tempStr.at(i) == 'C' && tempStr.at(i+1) == 'o' && tempStr.at(i+2) == 'o' && tempStr.at(i+3) == 'k' && tempStr.at(i+4) == 'i' && tempStr.at(i+5) == 'e' && tempStr.at(i+6) == ':' && tempStr.at(i+7) == ' ') {
+                    while(true) {
+                        imsi.append(tempStr.at(i++));
+                        if(tempStr.at(i) == '.' && tempStr.at(i+1) == '.' && tempStr.at(i+2) == '.' && tempStr.at(i+3) == '.') break;
+                    }
+                    dataList.append(imsi);
+                    break;
+                }
+                else if(tempStr.length() == (++i)) break;
+            }
+        }
+        else dataList.append("Not exist cookie");
+        qDebug() << "#####Cookie : " << dataList.at(get_broad_cnt - 1);
     }
 }
 
 void sendUrl(u_char *packet, int len) {
-    int i = 0;
     QString tempStr;
     u_char *text = packet;
-    for(i = 0; i < (len - 1); i++) tempStr.append(*(text+i));
-    qDebug() << "sendUrl : " << tempStr;
-    dataList[test_cnt].append(tempStr);
+    for(int i = 0; i < (len - 1); i++) tempStr.append(*(text+i));
+//    qDebug() << "sendUrl : " << tempStr;
 }
 
 void relay_spoof::mac_get(QString v, QString m, QString r) {

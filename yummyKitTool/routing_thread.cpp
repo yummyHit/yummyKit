@@ -119,7 +119,7 @@ void routing_thread::run() {
     if (pcap_setfilter(pcap, &filter) == -1) perror("pcap_setfilter");
 //    int pcap_fd = pcap_get_selectable_fd(pcap_handler);
 
-    host_name->start();
+    if(!host_name->host_stop) host_name->start();
 
     while(!pcap_stop && !host_name->host_stop) {
         bool break_point = false;
@@ -177,11 +177,17 @@ void routing_thread::run() {
             }
         }
     }
-    emit setLength(length);
-    emit setMacPacket(macv);
-    emit packet_info(pkt);
-    emit dump_pcap(pcap);
-    if(host_name->isRunning()) host_name->hostStop(true);
+    if(!list.isEmpty()) {
+        emit setLength(length);
+        emit setMacPacket(macv);
+        emit packet_info(pkt);
+        emit dump_pcap(pcap);
+        if(host_name->isRunning()) host_name->hostStop(true);
+    }
+    else {
+        length.append("root_squash");
+        emit setLength(length);
+    }
 }
 
 void mac_filter(char *get, u_char *my, int size) {	// mac address or ip address filter

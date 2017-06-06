@@ -18,6 +18,7 @@ public:
 
 signals:
     void urlList(QStringList);
+    void data_list(QStringList);
     void spoof_packet(u_char *);
     void spoof_fin(bool);
 

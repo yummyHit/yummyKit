@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 
+QString scan_ip;
 QStringList rt_ip_list, rt_len, rt_macPack;
 u_char *rt_packet_infov;
 pcap_t *rt_d_pcap;
@@ -11,6 +12,15 @@ bool thread_stop;
 
 scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     ui->setupUi(this);
+
+    system("route -n | grep UG | awk \'{ print $2 }\' > ./nbtscan_log.txt");
+    char buf[10];
+    std::ifstream fin("./nbtscan_log.txt");
+    while(fin >> buf) {}
+    scan_ip.append(buf);
+    ui->scanning_text->setText("Your router ip address is " + scan_ip);
+    ui->scanning_text->setEnabled(false);
+
     simod = new QStandardItemModel(0, 2, this);
     simod->setHorizontalHeaderItem(0, new QStandardItem(QString("IP Address")));
     simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
@@ -24,7 +34,6 @@ scanning::~scanning() {
 
 void scanning::on_StartBtn_clicked() {
     thread_stop = false;
-    QString scan_ip = ui->scanning_text->text();
     QChar check = *(scan_ip.unicode());
     if(check.isNull() || !check.isDigit()) QMessageBox::warning(this, "Warning!!", "If you don't know how to use it,\nyou can click 'Help' button.");
     else if(!sys_ip.isEmpty() && th->isRunning()) QMessageBox::warning(this, "Warning!!", "Scanning is already running!!\nIf you want new scan, first click stop button.\nAnd click start button.");
@@ -91,7 +100,11 @@ void scanning::rt_getHostName(QStringList host_list) {
 }
 
 void scanning::rt_getLength(QStringList len_list) {
-    rt_len = len_list;
+    if(len_list.at(0) == "root_squash") {
+        QMessageBox::information(this, "Failed!!", "You must open yummyKit program with root.\nPlease re-run yummyKit in root!!");
+        thread_stop = true;
+    }
+    else rt_len = len_list;
 }
 
 void scanning::rt_getMacPacket(QStringList mac_list) {
@@ -113,6 +126,6 @@ void scanning::stopThread() {
         thread_stop = true;
         th->set_stop(thread_stop);
         system(sys.toStdString().c_str());
-        system("arp >/dev/null");
+        system("arp -a >/dev/null");
     }
 }

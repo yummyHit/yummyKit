@@ -1,5 +1,9 @@
 #include "spoofurl.h"
 #include "ui_spoofurl.h"
+#include <QNetworkAccessManager>
+#include <QNetworkProxy>
+#include <QNetworkCookie>
+#include <QNetworkCookieJar>
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,11 +29,19 @@ spoofUrl::~spoofUrl()
 void spoofUrl::on_GoUrlBtn_clicked()
 {
     QString url = ui->listView->currentIndex().data().toString();
-    QDesktopServices::openUrl(url);
-    /*
-    for(int i = 0; i < spoof_dataList.length(); i++) {
-        spoof_dataList.at(i);
-    }*/
+    QString data = spoof_dataList.at(ui->listView->currentIndex().row());
+//    QNetworkCookieJar::setCookiesFromUrl(spoof_dataList.at(ui->listView->currentIndex().row()), url);
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    QNetworkProxy proxy;
+    proxy.setType(QNetworkProxy::HttpProxy);
+    proxy.setHostName("127.0.0.1");
+    proxy.setPort(8080);
+    manager->setProxy(proxy);
+    manager->setCookieJar(new QNetworkCookieJar());
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::CookieHeader, data.toStdString().c_str());
+    manager->post(req, "http://www.naver.com");
+//    QDesktopServices::openUrl(url);
 }
 
 void spoofUrl::on_StopBtn_clicked()
@@ -56,7 +68,7 @@ void spoofUrl::spoof_getAll(QString getIP, QString getRouterIP, QString getLen, 
     get->start();
     spoof_md = new QStringListModel();
     connect(get, SIGNAL(urlList(QStringList)), this, SLOT(spoof_getUrl(QStringList)));
-    connect(get, SIGNAL(urlList(QStringList)), this, SLOT(spoof_postUrl(QStringList)));
+    connect(get, SIGNAL(data_list(QStringList)), this, SLOT(spoof_postUrl(QStringList)));
     connect(get, SIGNAL(spoof_fin(bool)), this, SLOT(spoof_get_fin(bool)));
 }
 

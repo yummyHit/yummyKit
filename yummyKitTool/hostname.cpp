@@ -23,10 +23,13 @@ hostname::hostname(QObject *parent) : QThread(parent)
     while(fin >> buf) {}
     if(strncmp(buf, "Usage:", 6)) {
         memset(buf, 0, 10);
-        system("sudo apt-get install -y nbtscan && echo success > ./nbtscan_log.txt");
+        system("sudo apt-get install -y nbtscan >/dev/null && echo success > ./nbtscan_log.txt");
         std::ifstream fin("./nbtscan_log.txt");
         while(fin >> buf) {}
-        if(strncmp(buf, "success", 7)) system("echo 'You must run yummyKit with root. Please re-run.' > ./nbtscan_log.txt");
+        if(strncmp(buf, "success", 7)) {
+            system("echo 'You must run yummyKit with root. Please re-run.' > ./nbtscan_log.txt");
+            this->host_stop = true;
+        }
     }
 }
 
