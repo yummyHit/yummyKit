@@ -21,10 +21,6 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-void MainWindow::run() {
-
-}
-
 void MainWindow::on_actionIP_Scan_triggered() {
     if(routing_ip.isEmpty() && !rt_cancelBtn) rt = new scanning(this);
     main_model = new QStringListModel();
@@ -76,4 +72,9 @@ void MainWindow::main_getDump_pcap(pcap_t *p) {
 
 void MainWindow::main_getCancel(bool c) {
     rt_cancelBtn = c;
+}
+
+void MainWindow::on_actionWiFi_Cracking_triggered() {
+    wc = new wifi_cracking(this);
+    wc->exec();
 }

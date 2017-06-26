@@ -4,9 +4,9 @@
 #include <QMainWindow>
 #include <QtCore>
 #include <QtWidgets>
-#include <QThread>
 #include "falsify.h"
 #include "scanning.h"
+#include "wifi_cracking.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,7 +19,6 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    void run();
 
 public slots:
     void main_getList(QStringList, int);
@@ -34,11 +33,14 @@ private slots:
 
     void on_actionFalsify_Packet_triggered();
 
+    void on_actionWiFi_Cracking_triggered();
+
 private:
     Ui::MainWindow *ui;
     QProgressBar *pb;
     QLabel *lbl;
     scanning *rt;
+    wifi_cracking *wc;
     QStringListModel *main_model;
 };
 

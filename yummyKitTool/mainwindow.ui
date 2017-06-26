@@ -39,6 +39,8 @@
     </property>
     <addaction name="actionIP_Scan"/>
     <addaction name="actionFalsify_Packet"/>
+    <addaction name="separator"/>
+    <addaction name="actionWiFi_Cracking"/>
    </widget>
    <widget class="QMenu" name="menuUser">
     <property name="title">
@@ -65,6 +67,11 @@
   <action name="actionFalsify_Packet">
    <property name="text">
     <string>Falsify Packet</string>
+   </property>
+  </action>
+  <action name="actionWiFi_Cracking">
+   <property name="text">
+    <string>WiFi Cracking</string>
    </property>
   </action>
  </widget>

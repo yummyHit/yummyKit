@@ -16,16 +16,19 @@ QString getHex2String(u_char *s);
 
 hostname::hostname(QObject *parent) : QThread(parent)
 {
+    std::ifstream fin;
     this->host_stop = false;
     system("sudo nbtscan | grep Usage > ./nbtscan_log.txt");
     char buf[10];
-    std::ifstream fin("./nbtscan_log.txt");
+    fin.open("./nbtscan_log.txt");
     while(fin >> buf) {}
+    fin.close();
     if(strncmp(buf, "Usage:", 6)) {
         memset(buf, 0, 10);
         system("sudo apt-get install -y nbtscan >/dev/null && echo success > ./nbtscan_log.txt");
-        std::ifstream fin("./nbtscan_log.txt");
+        fin.open("./nbtscan_log.txt");
         while(fin >> buf) {}
+        fin.close();
         if(strncmp(buf, "success", 7)) {
             system("echo 'You must run yummyKit with root. Please re-run.' > ./nbtscan_log.txt");
             this->host_stop = true;
@@ -34,6 +37,7 @@ hostname::hostname(QObject *parent) : QThread(parent)
 }
 
 void hostname::run() {
+    std::ifstream fin;
     QString nbt;
     int i = 1;
     char buf[256];
@@ -48,8 +52,9 @@ void hostname::run() {
             nbt.append(" | grep -a '.' | awk '{ print $2 }' > ./nbtscan_log.txt");
             system(nbt.toStdString().c_str());
             system("iconv -c -f euc-kr -t utf-8 ./nbtscan_log.txt > ./nbtscan.txt");
-            std::ifstream fin("./nbtscan.txt");
+            fin.open("./nbtscan.txt");
             while(fin >> buf) {}
+            fin.close();
             if(!strncmp(buf, "address", 7)) host_filter(ip);
             else hostName << buf;
             emit setHostName(hostName);
@@ -65,7 +70,6 @@ void hostname::run() {
             }
         }
     }
-    qDebug() << "hostname finished!!";
     system("sudo rm ./nbtscan_log.txt ./nbtscan.txt");
 }
 
