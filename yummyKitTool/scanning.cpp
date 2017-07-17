@@ -25,10 +25,12 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
         ui->StartBtn->setEnabled(false);
         ui->StopBtn->setEnabled(false);
         ui->SelectBtn->setEnabled(false);
+        ui->scanning_text->setText("You are not connect to Network. Click \'Help\' Button.");
     }
     else {
         fin.open("./nbtscan_log.txt");
         while(fin >> buf) {}
+        fin.close();
         scan_ip.append(buf);
         ui->scanning_text->setText("Your router ip address is " + scan_ip);
 
