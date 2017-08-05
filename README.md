@@ -21,10 +21,6 @@ libpcap*
 libnet1*
 qt5-qmake
 qt5-default
-qt-opensource-linux-x64-5.5.1.run
-
-Once all of this is done, go to the yummyKitTool directory.
-cd ./yummyKitTool
 
 Finally, you can run yummyKit.
 ./yummyKit

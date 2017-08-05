@@ -18,7 +18,7 @@ hostname::hostname(QObject *parent) : QThread(parent)
 {
     std::ifstream fin;
     this->host_stop = false;
-    system("sudo nbtscan | grep Usage > ./nbtscan_log.txt");
+    system("sudo nbtscan | grep Usage >./nbtscan_log.txt");
     char buf[10];
     fin.open("./nbtscan_log.txt");
     while(fin >> buf) {}
