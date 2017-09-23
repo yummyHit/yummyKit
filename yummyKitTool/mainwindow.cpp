@@ -4,11 +4,12 @@
 #include <QtWidgets>
 #include <pcap.h>
 
-QStringList ip_list, len, macPack;
-u_char *packet_infov;
-pcap_t *d_pcap;
+QStringList mainIPList, mainLen, mainMacList;
+u_char *mainPacket;
+pcap_t *mainPcap;
+pcap_if_t *mainDevs;
 int row_index;
-bool rt_cancelBtn = false;
+bool scanStopBtn = false;
 
 QString routing_ip, main_my_ip;
 
@@ -22,56 +23,61 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::on_actionIP_Scan_triggered() {
-    if(routing_ip.isEmpty() && !rt_cancelBtn) rt = new scanning(this);
+    if(routing_ip.isEmpty() && !scanStopBtn) scan = new scanning(this);
     main_model = new QStringListModel();
-    connect(rt, SIGNAL(rt_setList(QStringList, int)), this, SLOT(main_getList(QStringList, int)));
-    connect(rt, SIGNAL(rt_setLength(QStringList)), this, SLOT(main_getLength(QStringList)));
-    connect(rt, SIGNAL(rt_setMacPacket(QStringList)), this, SLOT(main_getMacPacket(QStringList)));
-    connect(rt, SIGNAL(rt_packet_info(u_char*)), this, SLOT(main_getPacket_info(u_char*)));
-    connect(rt, SIGNAL(rt_dump_pcap(pcap_t*)), this, SLOT(main_getDump_pcap(pcap_t*)));
-    connect(rt, SIGNAL(rt_cancel(bool)), this, SLOT(main_getCancel(bool)));
-    rt->exec();
+    connect(scan, SIGNAL(scanSetIPList(QStringList, int)), this, SLOT(mainGetIPList(QStringList, int)));
+    connect(scan, SIGNAL(scanSetLength(QStringList)), this, SLOT(mainGetLength(QStringList)));
+    connect(scan, SIGNAL(scanSetMacList(QStringList)), this, SLOT(mainGetMacList(QStringList)));
+    connect(scan, SIGNAL(scanSetPacket(u_char*)), this, SLOT(mainGetPacket(u_char*)));
+    connect(scan, SIGNAL(scanSetPcap(pcap_t*)), this, SLOT(mainGetPcap(pcap_t*)));
+    connect(scan, SIGNAL(scanSetDevName(pcap_if_t*)), this, SLOT(mainGetDevName(pcap_if_t*)));
+    connect(scan, SIGNAL(scanSetStop(bool)), this, SLOT(mainGetStop(bool)));
+    scan->exec();
 }
 
 void MainWindow::on_actionFalsify_Packet_triggered()
 {
-    if(!macPack.isEmpty()) {
+    if(!mainMacList.isEmpty()) {
         falsify *pkt = new falsify(this);
-        pkt->pkt_getAll(ui->listView->currentIndex().data().toString(), routing_ip, main_my_ip, len.at(row_index-1), macPack.at(0), macPack.at(1), macPack.at(row_index), packet_infov, d_pcap);
+        pkt->pktGetInfo(ui->listView->currentIndex().data().toString(), routing_ip, main_my_ip, mainLen.at(row_index-1), mainMacList.at(0), mainMacList.at(1), mainMacList.at(row_index), mainPacket, mainPcap, mainDevs);
         pkt->exec();
     }
     else QMessageBox::warning(this, "Dangerous!!", "First, you must execute routing.");
 }
 
-void MainWindow::main_getList(QStringList pack_list, int rt_index) {
-    ip_list.clear();
+void MainWindow::mainGetIPList(QStringList pack_list, int scan_index) {
+    mainIPList.clear();
     routing_ip = pack_list.at(0);
     main_my_ip = pack_list.at(1);
-    row_index = rt_index;
-    ip_list.append(pack_list.at(row_index));
-    main_model->setStringList(ip_list);
+    row_index = scan_index;
+    mainIPList.append(pack_list.at(row_index));
+    main_model->setStringList(mainIPList);
     ui->listView->setModel(main_model);
 }
 
-void MainWindow::main_getLength(QStringList len_list) {
-    len = len_list;
+void MainWindow::mainGetLength(QStringList len_list) {
+    mainLen = len_list;
 }
 
-void MainWindow::main_getMacPacket(QStringList mac_list) {
-    macPack = mac_list;
+void MainWindow::mainGetMacList(QStringList mac_list) {
+    mainMacList = mac_list;
 }
 
-void MainWindow::main_getPacket_info(u_char *packet) {
-    packet_infov = packet;
+void MainWindow::mainGetPacket(u_char *packet) {
+    mainPacket = packet;
 }
 
-void MainWindow::main_getDump_pcap(pcap_t *p) {
-    d_pcap = p;
+void MainWindow::mainGetPcap(pcap_t *pcap) {
+    mainPcap = pcap;
     QMessageBox::information(this, "Success!!", "Select a Packet successfully!!\nYou can try spoofing!!");
 }
 
-void MainWindow::main_getCancel(bool c) {
-    rt_cancelBtn = c;
+void MainWindow::mainGetDevName(pcap_if_t *devs) {
+    mainDevs = devs;
+}
+
+void MainWindow::mainGetStop(bool c) {
+    scanStopBtn = c;
 }
 
 void MainWindow::on_actionWiFi_Cracking_triggered() {

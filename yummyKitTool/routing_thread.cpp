@@ -1,3 +1,4 @@
+/*
 #include "routing_thread.h"
 //#include "statusq.h"
 #include <QCoreApplication>
@@ -24,6 +25,7 @@ QString getMacString(u_char *s);
 QStringList list, length, macv;
 QString sys, sys_ipv;
 pcap_t *pcap;
+pcap_if_t *alldevs;
 
 bool pcap_stop;
 
@@ -32,7 +34,7 @@ u_char *pkt;
 u_char my_mac[6] = {0,}, my_ip[4] = {0,};
 u_char router_mac[6] = {0,}, router_ip[4] = {0,};
 u_char victim_mac[256][6] = {0,}, victim_ip[256][4] = {0,};
-int broad_cnt = 0;
+int if_num, broad_cnt = 0;
 
 // broadcast address define
 u_char br_f[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -49,6 +51,7 @@ struct arphdr {		// arp_header structure. Libnet don't have mac or ip address in
     u_char tha[6];		// Target hardware address
     u_char tpa[4];		// Target IP address
 };
+*/
 /*
 struct list_item {
     struct list_item* next;
@@ -72,6 +75,7 @@ struct nb_host_info* parse_response(char* buff, int buffsize);
 struct nbt_list* new_list();
 struct list_item* new_list_item(unsigned long content);
 */
+/*
 routing_thread::routing_thread(QObject *parent) : QThread(parent)
 {
     pcap_stop = false;
@@ -85,7 +89,6 @@ void routing_thread::run() {
     struct ifreq ifr, ifaddr;
     QByteArray mac;
     char errbuf[PCAP_ERRBUF_SIZE];
-    char *dev;
     struct pcap_pkthdr *pkthdr;
     u_char *packet;
     struct arphdr *arpheader;
@@ -93,26 +96,38 @@ void routing_thread::run() {
     u_char tmp_ip[4] = {0,};
     QString str_list;
 
-    dev = pcap_lookupdev(errbuf);
+//    char host[30];
+//    struct hostent hostData;
+
+    while(1) if(if_num == ++i) break; else alldevs = alldevs->next;
+
     s = socket(AF_INET, SOCK_DGRAM, 0);
-    strcpy(ifr.ifr_name, dev);
+    strcpy(ifr.ifr_name, alldevs->name);
     ioctl(s, SIOCGIFHWADDR, &ifr);
     for(i = 0; i < ETHER_ADDR_LEN; i++) mac.append(ifr.ifr_hwaddr.sa_data[i]);
     mac_filter(mac.toHex().data(), my_mac, mac.size());
     ifaddr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifaddr.ifr_name, dev, IFNAMSIZ-1);
+    strncpy(ifaddr.ifr_name, alldevs->name, IFNAMSIZ-1);
     ioctl(s, SIOCGIFADDR, &ifaddr);
     close(s);
-
+*/
+/*
+    gethostname(host, sizeof(host));
+    if((hostData = gethostbyname(host)) == NULL) printf("Gethostbyname Error!!\n");
+    i = 0;
+    while(hostData->h_addr_list[i]) my_ip = (u_char *)inet_ntoa(*(struct in_addr *)hostData->h_addr_list[i++]);
+    i = 0;
+*/
+/*
     ip_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), my_ip);
     ip_filter(sys_ipv.toLatin1().data(), router_ip);
     sys_ipv.clear();
 
-//    host_name_print();
 
+//    host_name_print();
     // Look up info from the capture device.
-    if(pcap_lookupnet(dev, &netp, &maskp, errbuf) == -1) perror("pcap_lookupnet");
-    pcap = pcap_open_live(dev, 65535, NONPROMISCUOUS, -1, errbuf);
+    if(pcap_lookupnet(alldevs->name, &netp, &maskp, errbuf) == -1) perror("pcap_lookupnet");
+    pcap = pcap_open_live(alldevs->name, 65535, NONPROMISCUOUS, -1, errbuf);
 
     // Compiles the filter expression into a BPF filter program
     if (pcap_compile(pcap, &filter, "arp", 0, maskp) == -1) perror("pcap_compile");
@@ -243,8 +258,6 @@ void ip_filter(char *get, u_char *my) {
     mac_filter(tmp.toHex().data(), my, tmp.size());
 }
 
-
-
 int flag_check(u_char *a, u_char *b, int size) {	// compare address and check flags
     int value = 0;
     if(size == ETHER_ADDR_LEN) value = (*a != *b ? 1 : ((*(a+1) != *(b+1)) ? 1 : ((*(a+2) != *(b+2)) ? 1 : ((*(a+3) != *(b+3)) ? 1 : ((*(a+4) != *(b+4)) ? 1 : ((*(a+5) != *(b+5)) ? 1 : -1))))));
@@ -311,11 +324,13 @@ void routing_thread::set_stop(bool s) {
     mut.unlock();
 }
 
-void routing_thread::set_sys(QString s, QString ip_s) {
+void routing_thread::set_sys(QString s, QString ip_s, int num, pcap_if_t *devs) {
     sys = s;
     sys_ipv = ip_s;
+    if_num = num;
+    alldevs = devs;
 }
-
+*/
 
 
 // It is part of nbtscan command. parse_response() function in statusq.c, nb_host_info structure in statusq.h

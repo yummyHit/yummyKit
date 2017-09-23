@@ -6,7 +6,7 @@
 #include <QtWidgets>
 #include <QThread>
 #include <pcap.h>
-#include "routing_thread.h"
+#include "scanning_thread.h"
 
 namespace Ui {
 class scanning;
@@ -20,42 +20,40 @@ public:
     explicit scanning(QWidget *parent = 0);
     ~scanning();
 
-    routing_thread *th;
-    int rt_index;
+    scanning_thread *scanThread;
 
 private slots:
     void on_StartBtn_clicked();
-
     void on_StopBtn_clicked();
-
     void on_HelpBtn_clicked();
-
     void on_SelectBtn_clicked();
-
     void on_CancelBtn_clicked();
 
 public slots:
-    void rt_getList(QStringList);
-    void rt_getHostName(QStringList);
-    void rt_getLength(QStringList);
-    void rt_getMacPacket(QStringList);
-    void rt_getPacket_info(u_char*);
-    void rt_getDump_pcap(pcap_t*);
+    void scanGetIPList(QString);
+    void scanGetHostList(QStringList);
+    void scanGetLength(QStringList);
+    void scanGetMacList(QString);
+    void scanGetPacket(u_char*);
+    void scanGetPcap(pcap_t*);
 
 signals:
-    void rt_setList(QStringList, int);
-    void rt_setLength(QStringList);
-    void rt_setMacPacket(QStringList);
-    void rt_packet_info(u_char*);
-    void rt_dump_pcap(pcap_t*);
-    void rt_cancel(bool);
+    void scanSetIPList(QStringList, int);
+    void scanSetLength(QStringList);
+    void scanSetMacList(QStringList);
+    void scanSetPacket(u_char*);
+    void scanSetPcap(pcap_t*);
+    void scanSetDevName(pcap_if_t*);
+    void scanSetStop(bool);
 
 private:
     Ui::scanning *ui;
     QStandardItemModel *simod;
     QStandardItem *md_ip, *md_host;
     QString sys, sys_ip;
+    bool start_cnt;
     void stopThread();
+    void findDevs();
 };
 
 #endif // SCANNING_H

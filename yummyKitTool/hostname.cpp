@@ -7,19 +7,24 @@
 #include <fstream>
 #include <arpa/inet.h>
 #include <netdb.h>
+#define IP_ADDR_LEN 4
 
-QStringList host_ipList, hostName;
-u_char *ip;
+QStringList hostIPList, hostName;
+u_char *hostIP;
+int host_idx = 0;
 
 void host_filter(u_char*);
 QString getHex2String(u_char *s);
 
-hostname::hostname(QObject *parent) : QThread(parent)
-{
+hostname::hostname(QObject *parent) : QThread(parent) {
     std::ifstream fin;
-    this->host_stop = false;
-    system("sudo nbtscan | grep Usage >./nbtscan_log.txt");
     char buf[10];
+
+    if(host_idx == 1) this->idx = 0;
+    else this->idx = host_idx;
+    this->host_stop = false;
+    this->start_flag = false;
+    system("sudo nbtscan | grep Usage >./nbtscan_log.txt");
     fin.open("./nbtscan_log.txt");
     while(fin >> buf) {}
     fin.close();
@@ -37,33 +42,35 @@ hostname::hostname(QObject *parent) : QThread(parent)
 }
 
 void hostname::run() {
+    QTime time;
     std::ifstream fin;
     QString nbt;
-    int i = 1;
     char buf[256];
+    time.start();
     while(1) {
-        if(!host_ipList.isEmpty() && host_ipList.length() == 1) {
+        if(!hostIPList.isEmpty() && this->idx == 0 && this->start_flag) {
             hostName << "Router";
-            emit setHostName(hostName);
-        } else if (!host_ipList.isEmpty() && host_ipList.length() > 1) {
+            emit hostnameSetHostList(hostName);
+            this->idx++;
+        } else if (!hostIPList.isEmpty() && this->idx != 0 && this->start_flag) {
             memset(buf, 0, 256);
             nbt.append("sudo nbtscan ");
-            nbt.append(host_ipList.at(i));
+            nbt.append(hostIPList.at(this->idx));
             nbt.append(" | grep -a '.' | awk '{ print $2 }' > ./nbtscan_log.txt");
             system(nbt.toStdString().c_str());
             system("iconv -c -f euc-kr -t utf-8 ./nbtscan_log.txt > ./nbtscan.txt");
             fin.open("./nbtscan.txt");
             while(fin >> buf) {}
             fin.close();
-            if(!strncmp(buf, "address", 7)) host_filter(ip);
+            if(!strncmp(buf, "address", 7)) host_filter(hostIP);
             else hostName << buf;
-            emit setHostName(hostName);
+            emit hostnameSetHostList(hostName);
             nbt.clear();
-            i++;
-            if(i == host_ipList.length() && this->host_stop) break;
-            else if(i == host_ipList.length()) {
-                sleep(15);
-                if(i == host_ipList.length()) {
+            this->idx++;
+            if(this->idx == hostIPList.length() && this->host_stop) break;
+            else if(this->idx == hostIPList.length()) {
+                while(1) if(((time.elapsed() / 1000) % 21) == 20) break;
+                if(this->idx == hostIPList.length()) {
                     this->host_stop = true;
                     break;
                 }
@@ -78,7 +85,7 @@ void host_filter(u_char *ip) {
     char host_buf[NI_MAXHOST] = {0,};
 //    struct hostent *hptr;
     char host_tmp[15] = {0,};
-    for(int i = 0, j = 0; i < 4; i++) {
+    for(int i = 0, j = 0; i < IP_ADDR_LEN; i++) {
         if((ip[i] / 100) != 0) {
             host_tmp[j] = (ip[i] / 100) + '0';
             host_tmp[j+1] = (ip[i] / 10) - ((ip[i] / 100) * 10) + '0';
@@ -151,24 +158,27 @@ void host_filter(u_char *ip) {
 }
 
 QString getHex2String(u_char *s) {
-    QString a, str;
-    for(int i = 0; i < 4; i++) {
-        a = QString("%1").arg(s[i], 0, 10);
-        if(i < 3) a += ".";
-        str.append(a);
+    QString str, result;
+    for(int i = 0; i < IP_ADDR_LEN; i++) {
+        if(i == 3) str.sprintf("%d", s[i]);
+        else str.sprintf("%d.", s[i]);
+        result.append(str);
     }
-    a.clear();
-    return str;
+    str.clear();
+    return result;
 }
 
 void hostname::hostStop(bool s) {
     QMutex mut;
     mut.lock();
     this->host_stop = s;
+    this->start_flag = false;
     mut.unlock();
 }
 
-void hostname::getArgu(u_char *list) {
-    host_ipList << getHex2String(list);
-    ip = list;
+void hostname::getArgu(u_char *list, int index, bool flag) {
+    hostIPList << getHex2String(list);
+    hostIP = list;
+    host_idx = index;
+    this->start_flag = flag;
 }

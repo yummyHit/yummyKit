@@ -11,9 +11,9 @@ class relay_falsify : public QThread
 public:
     explicit relay_falsify(QObject *parent = 0);
     void run();
-    bool stop;
+    bool falsifyStop;
 
-    void rep_getAll(QString, QString, QString, QString, QString, QString, u_char*, pcap_t*);
+    void relayGetInfo(QString, QString, QString, QString, QString, QString, u_char*, pcap_t*);
 };
 
 #endif // RELAY_FALSIFY_H

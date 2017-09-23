@@ -19,22 +19,20 @@ public:
     explicit spoofUrl(QWidget *parent = 0);
     ~spoofUrl();
 
-    void spoof_getAll(QString, QString, QString, QString, QString, QString, u_char*, pcap_t*);
+    void spoofGetInfo(QString, QString, QString, QString, QString, QString, u_char*, pcap_t*, pcap_if_t*);
 
-    relay_falsify *rep;
-    relay_spoof *get;
+    relay_falsify *relayFalsify;
+    relay_spoof *relaySpoof;
 
 private slots:
     void on_GoUrlBtn_clicked();
-
     void on_StopBtn_clicked();
-
     void on_CancelBtn_clicked();
 
 public slots:
     void spoof_getUrl(QStringList);
     void spoof_postUrl(QStringList);
-    void spoof_get_fin(bool);
+    void spoof_getFin(bool);
 
 private:
     Ui::spoofUrl *ui;

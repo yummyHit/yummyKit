@@ -1,3 +1,4 @@
+/*
 #ifndef ROUTING_THREAD_H
 #define ROUTING_THREAD_H
 
@@ -14,7 +15,7 @@ public:
     explicit routing_thread(QObject *parent = 0);
     void run();
     void set_stop(bool);
-    void set_sys(QString, QString);
+    void set_sys(QString, QString, int, pcap_if_t*);
 
     hostname *host_name;
 
@@ -27,3 +28,4 @@ signals:
 };
 
 #endif
+*/

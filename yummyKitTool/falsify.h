@@ -19,20 +19,20 @@ public:
     explicit falsify(QWidget *parent = 0);
     ~falsify();
 
-    void pkt_getAll(QString, QString, QString, QString, QString, QString, QString, u_char*, pcap_t*);
+    void pktGetInfo(QString, QString, QString, QString, QString, QString, QString, u_char*, pcap_t*, pcap_if_t*);
 
     spoofUrl *spoof;
 
 private slots:
     void on_SpoofBtn_clicked();
-
     void on_CancelBtn_clicked();
 
 private:
     Ui::falsify *ui;
-    QString getIP, getMyIP, getRouterIP, getLen, getRouterMac, getMyMac, getVictimMac;
-    u_char *pkt;
-    pcap_t *dump_p;
+    QString falsifyGetVictimIP, falsifyGetVictimMac, falsifyGetAtkIP, falsifyGetAtkMac, falsifyGetRouterIP, falsifyGetRouterMac, falsifyGetLen;
+    u_char *falsifyPacket;
+    pcap_t *falsifyPcap;
+    pcap_if_t *falsifyDevs;
 };
 
 #endif // FALSIFY_H

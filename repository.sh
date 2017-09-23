@@ -1,5 +1,6 @@
 #!/bin/sh
 ARCH=$(uname -m)
+PERMISSION=$(whoami)
 INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1* qt5-qmake qt5-default"
 TITLE="If it is finish that download qt and install package files, print out \"Success\""
 FINISH="\"Success\""
@@ -23,7 +24,7 @@ echo "\n"
 #WGET_CONTINUE="\"$FILE is exist!! $FILE Download continue...\""
 SUDO_FAILED="\"You must change permission from user to root! cuz Install Packages!\""
 INSTALL_SUCCESS="\"Packages install finished!! Now we build yummyKit tool...\""
-BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in terminal \"./yummyKit\" Just do it!\""
+BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in terminal \"sudo ./yummyKit\" Just do it!\""
 #if [ ! -e $FILE ] ; then
 #	echo "\n"
 #	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
@@ -106,6 +107,7 @@ BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in termi
 #	echo $FAST_GUI > ./qt-fast-installer-gui.qs
 #	chmod +x ./$FILE
 #	./$FILE --script ./qt-fast-installer-gui.qs
+if [ $PERMISSION = "root" ] ; then
 	sudo apt-get update >/dev/null
 	sudo apt-get -y install $INSTALL_LIST >/dev/null
 	if [ $ARCH = "x86_64" ] ; then
@@ -120,7 +122,7 @@ BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in termi
 	echo "\n"
 #	mkdir ./build && mv ./Makefile ./build
 #	sudo rm ./$FILE ./qt-fast-installer-gui.qs
-	qmake ./yummyKitTool/yummyKit.pro && make && sudo rm *.cpp *.o	
+	make >/dev/null 2>/dev/null && sudo rm *.cpp *.o *.h
 	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 	echo "\n"
 	printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"

@@ -1,14 +1,17 @@
+#define HAVE_REMOTE
+
 #include "scanning.h"
 #include "ui_scanning.h"
 #include <iostream>
 #include <fstream>
 
-QString scan_ip;
-QStringList rt_ip_list, rt_len, rt_macPack;
-u_char *rt_packet_infov;
-pcap_t *rt_d_pcap;
+QString scanIP;
+QStringList scanIPList, scanLen, scanMacList;
+u_char *scanPacket;
+pcap_t *scanPcap;
+pcap_if_t *devs;
 
-bool thread_stop;
+bool scan_stop;
 
 scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     ui->setupUi(this);
@@ -27,21 +30,23 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
         ui->SelectBtn->setEnabled(false);
         ui->scanning_text->setText("You are not connect to Network. Click \'Help\' Button.");
     }
-    else {
+    else if(!this->start_cnt){
         fin.open("./nbtscan_log.txt");
         while(fin >> buf) {}
         fin.close();
-        scan_ip.append(buf);
-        ui->scanning_text->setText("Your router ip address is " + scan_ip);
+        scanIP.append(buf);
+        ui->scanning_text->setText("Your router ip address is " + scanIP);
 
         simod = new QStandardItemModel(0, 2, this);
-        simod->setHorizontalHeaderItem(0, new QStandardItem(QString("IP Address")));
-        simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
+        simod->setHorizontalHeaderItem(0, new QStandardItem(QString("Index")));
+        simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Network Interfaces")));
         ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
         ui->tableView->setModel(simod);
     }
     ui->scanning_text->setEnabled(false);
     system("sudo rm ./nbtscan_check.txt ./nbtscan_log.txt");
+
+    if(ui->StartBtn->isEnabled()) findDevs();
 }
 
 scanning::~scanning() {
@@ -49,26 +54,43 @@ scanning::~scanning() {
 }
 
 void scanning::on_StartBtn_clicked() {
-    thread_stop = false;
-    QChar check = *(scan_ip.unicode());
+    scan_stop = false;
+    int if_num = 1;
+    QChar check = *(scanIP.unicode());
     if(check.isNull() || !check.isDigit()) QMessageBox::warning(this, "Warning!!", "If you don't know how to use it,\nyou can click 'Help' button.");
-    else if(!sys_ip.isEmpty() && th->isRunning()) QMessageBox::warning(this, "Warning!!", "Scanning is already running!!\nIf you want new scan, first click stop button.\nAnd click start button.");
+    else if(!sys_ip.isEmpty() && scanThread->isRunning()) QMessageBox::warning(this, "Warning!!", "Scanning is already running!!\nIf you want new scan, first click stop button.\nAnd click start button.");
     else {
-        sys_ip = scan_ip;
+        if(!ui->tableView->currentIndex().isValid() && !this->start_cnt) {
+            QMessageBox::warning(this, "Warning!!", "You must select 1 Network Interface at least.\nIf you don't want to select it, click \"Start\" button again.");
+            this->start_cnt = true;
+            return;
+        }
+        else if(!this->start_cnt) if_num = ui->tableView->currentIndex().row() + 1;
+
+        sys_ip = scanIP;
         if(sys.isEmpty()) {
+            this->start_cnt = false;
             sys.append("arp -d ");
             sys.append(sys_ip);
-            th = new routing_thread();
+            scanThread = new scanning_thread();
         }
-        else th = new routing_thread();
-        th->set_sys(sys, sys_ip);
-        th->start();
-        connect(th, SIGNAL(setList(QStringList)), this, SLOT(rt_getList(QStringList)));
-        connect(th, SIGNAL(setLength(QStringList)), this, SLOT(rt_getLength(QStringList)));
-        connect(th, SIGNAL(setMacPacket(QStringList)), this, SLOT(rt_getMacPacket(QStringList)));
-        connect(th, SIGNAL(packet_info(u_char*)), this, SLOT(rt_getPacket_info(u_char*)));
-        connect(th, SIGNAL(dump_pcap(pcap_t*)), this, SLOT(rt_getDump_pcap(pcap_t*)));
-        connect(th->host_name, SIGNAL(setHostName(QStringList)), this, SLOT(rt_getHostName(QStringList)));
+        else {
+            this->start_cnt = true;
+            scanThread = new scanning_thread();
+        }
+        scanThread->scanThreadSetSys(sys, sys_ip, if_num, devs);
+        if(!this->start_cnt) {
+            simod->clear();
+            simod->setHorizontalHeaderItem(0, new QStandardItem(QString("IP Address")));
+            simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
+        }
+        scanThread->start();
+        connect(scanThread, SIGNAL(scanThreadSetIPList(QString)), this, SLOT(scanGetIPList(QString)));
+        connect(scanThread, SIGNAL(scanThreadSetLength(QStringList)), this, SLOT(scanGetLength(QStringList)));
+        connect(scanThread, SIGNAL(scanThreadSetMacList(QString)), this, SLOT(scanGetMacList(QString)));
+        connect(scanThread, SIGNAL(scanThreadPacket(u_char*)), this, SLOT(scanGetPacket(u_char*)));
+        connect(scanThread, SIGNAL(scanThreadPcap(pcap_t*)), this, SLOT(scanGetPcap(pcap_t*)));
+        connect(scanThread->host_name, SIGNAL(hostnameSetHostList(QStringList)), this, SLOT(scanGetHostList(QStringList)));
     }
 }
 
@@ -77,72 +99,104 @@ void scanning::on_StopBtn_clicked() {
 }
 
 void scanning::on_HelpBtn_clicked() {
-    if(!ui->StartBtn->isEnabled())QMessageBox::warning(this, "Failed!!", "Your network isn't connected by network!!\nYou must connect a network!!");
-    else QMessageBox::information(this, "Help", "If you don't know how about router's IP address, follow it.\n1. Open a terminal\n2. Insert 'route'\n3. Default Gateway is your router's IP address");
+    if(!ui->StartBtn->isEnabled()) QMessageBox::warning(this, "Failed!!", "Your network isn't connected by network!!\nYou must connect a network!!");
+    else if(sys.isEmpty()) QMessageBox::information(this, "Help", "You must select your network interface and click start button.\nIf you don't know what it is, click \"Start\" Button.");
+    else QMessageBox::information(this, "Help", "Select ip or host name in table.\nIf you don't know what you want to address, check target ip on terminal.");
 }
 
 void scanning::on_SelectBtn_clicked() {
-    if(!ui->tableView->currentIndex().isValid()) QMessageBox::information(this, "Warning", "You must select 1 IP address at least.\nIf you don't know how to use it, please click help button.");
-    else if(!thread_stop) QMessageBox::information(this, "Warning", "Scanning is running!!\nIf you want select button, first click stop button.\nOr wait a second. Then you can click select button.");
+    if(!ui->tableView->currentIndex().isValid() || (!scan_stop && sys_ip.isEmpty())) QMessageBox::information(this, "Warning", "You must select 1 IP address at least.\nIf you don't know how to use it, please click help button.");
+    else if(!scan_stop) QMessageBox::information(this, "Warning", "Scanning is running!!\nIf you want select button, first click stop button.\nOr wait a second. Then you can click select button.");
     else {
         stopThread();
-        emit rt_setMacPacket(rt_macPack);
-        emit rt_packet_info(rt_packet_infov);
-        emit rt_dump_pcap(rt_d_pcap);
-        emit rt_setList(rt_ip_list, ui->tableView->currentIndex().row());
-        emit rt_setLength(rt_len);
+        emit scanSetMacList(scanMacList);
+        emit scanSetPacket(scanPacket);
+        emit scanSetPcap(scanPcap);
+        emit scanSetDevName(devs);
+        emit scanSetIPList(scanIPList, ui->tableView->currentIndex().row());
+        emit scanSetLength(scanLen);
         this->close();
     }
 }
 
 void scanning::on_CancelBtn_clicked() {
     stopThread();
-    emit rt_cancel(true);
+    emit scanSetStop(true);
     this->close();
 }
 
-void scanning::rt_getList(QStringList pack_list) {
-    rt_ip_list = pack_list;
-    for(int i = 0; i < rt_ip_list.length(); i++) {
-        md_ip = new QStandardItem(rt_ip_list.at(i));
-        simod->setItem(i, 0, md_ip);
+void scanning::scanGetIPList(QString pack_list) {
+    scanIPList << pack_list;
+    if(this->start_cnt) {
+        for(int i = md_ip->rowCount(); i < scanIPList.length(); i++) {
+            md_ip = new QStandardItem(scanIPList.at(i));
+            simod->setItem(i, 0, md_ip);
+        }
+    }
+    else {
+        for(int i = 0; i < scanIPList.length(); i++) {
+            md_ip = new QStandardItem(scanIPList.at(i));
+            simod->setItem(i, 0, md_ip);
+        }
     }
 }
 
-void scanning::rt_getHostName(QStringList host_list) {
-    for(int i = 0; i < host_list.length(); i++) {
-        md_host = new QStandardItem(host_list.at(i));
-        simod->setItem(i, 1, md_host);
+void scanning::scanGetHostList(QStringList host_list) {
+    if(this->start_cnt) {
+        for(int i = md_host->rowCount(); i < host_list.length(); i++) {
+            md_host = new QStandardItem(host_list.at(i));
+            simod->setItem(i, 1, md_host);
+        }
+    }
+    else {
+        for(int i = 0; i < host_list.length(); i++) {
+            md_host = new QStandardItem(host_list.at(i));
+            simod->setItem(i, 1, md_host);
+        }
     }
 }
 
-void scanning::rt_getLength(QStringList len_list) {
+void scanning::scanGetLength(QStringList len_list) {
     if(len_list.at(0) == "root_squash") {
         QMessageBox::information(this, "Failed!!", "You must open yummyKit program with root.\nPlease re-run yummyKit with root account!!");
-        thread_stop = true;
+        scan_stop = true;
     }
-    else rt_len = len_list;
+    else scanLen = len_list;
+    qDebug() << scanLen;
 }
 
-void scanning::rt_getMacPacket(QStringList mac_list) {
-    rt_macPack = mac_list;
+void scanning::scanGetMacList(QString mac_list) {
+    scanMacList << mac_list;
 }
 
-void scanning::rt_getPacket_info(u_char *packet) {
-    rt_packet_infov = packet;
+void scanning::scanGetPacket(u_char *packet) {
+    scanPacket = packet;
 }
 
-void scanning::rt_getDump_pcap(pcap_t *p) {
-    rt_d_pcap = p;
-    thread_stop = true;
+void scanning::scanGetPcap(pcap_t *p) {
+    scanPcap = p;
+    scan_stop = true;
+    this->start_cnt = true;
     QMessageBox::information(this, "Success!!", "IP Scan is finish successfully!!");
 }
 
 void scanning::stopThread() {
-    if(!thread_stop) {
-        thread_stop = true;
-        th->set_stop(thread_stop);
+    if(!scan_stop) {
+        scan_stop = true;
+        scanThread->scanThreadSetStop(scan_stop);
         system(sys.toStdString().c_str());
         system("arp -a >/dev/null");
+    }
+}
+
+void scanning::findDevs() {
+    pcap_if_t *tmp;
+    char errbuf[256];
+    int i = 0;
+    if(pcap_findalldevs(&devs, errbuf) == -1) QMessageBox::warning(this, "Warning!!", "Check your Network Interface Card!!");
+    else for(tmp = devs; tmp; tmp = tmp->next) {
+        md_host = new QStandardItem(QString::fromStdString(tmp->name));
+        simod->setItem(i, 0, new QStandardItem(QString::number(i + 1)));
+        simod->setItem(i++, 1, md_host);
     }
 }

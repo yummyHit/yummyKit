@@ -13,17 +13,17 @@ public:
     explicit relay_spoof(QObject *parent = 0);
     void run();
 
-    void mac_get(QString, QString, QString);
-    bool get_stop;
+    void relayGetMacInfo(QString, QString, QString, pcap_if_t*);
+    bool spoofStop;
 
 signals:
-    void urlList(QStringList);
-    void data_list(QStringList);
+    void relay_urlList(QStringList);
+    void relay_dataList(QStringList);
     void spoof_packet(u_char *);
-    void spoof_fin(bool);
+    void relay_spoofFin(bool);
 
 private:
-    QString my_mac, router_mac, victim_mac;
+    QString relayAtkMac, relayRouterMac, relayVictimMac;
 };
 
 #endif // RELAY_SPOOF_H

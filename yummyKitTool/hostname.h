@@ -13,11 +13,14 @@ public:
     explicit hostname(QObject *parent = 0);
     void run();
     void hostStop(bool);
-    void getArgu(u_char*);
+    void getArgu(u_char*, int, bool);
 
-    bool host_stop;
+    bool host_stop, start_flag;
 signals:
-    void setHostName(QStringList);
+    void hostnameSetHostList(QStringList);
+
+private:
+    int idx;
 };
 
 #endif // HOSTNAME_H

