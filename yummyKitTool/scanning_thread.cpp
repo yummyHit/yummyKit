@@ -107,8 +107,8 @@ void scanning_thread::run() {
                 scan_ip_list << getIPString(router_ip) << getIPString(my_ip);
                 scan_length_list.append(QString::number(pkthdr->len));
                 pkt = packet;
-                host_name->getArgu(router_ip, 1, true);
-                host_name->getArgu(my_ip, scan_ip_list.length(), true);
+                host_name->getArgu(router_ip, true);
+                host_name->getArgu(my_ip, true);
                 send_broad(packet, pkthdr->len, pcap);
             }
 
@@ -130,7 +130,7 @@ void scanning_thread::run() {
                 emit scanThreadSetIPList(scan_ip);
                 scan_ip_list << scan_ip;
                 scan_length_list.append(QString::number(pkthdr->len));
-                host_name->getArgu(*(victim_ip + broad_cnt), scan_ip_list.length(), true);
+                host_name->getArgu(*(victim_ip + broad_cnt), true);
                 broad_cnt++;
                 if(((time_scan.elapsed() / 1000) % 10) < 15) send_broad(packet, pkthdr->len, pcap);
             }
@@ -144,7 +144,7 @@ void scanning_thread::run() {
                 emit scanThreadSetIPList(scan_ip);
                 scan_ip_list << scan_ip;
                 scan_length_list.append(QString::number(pkthdr->len));
-                host_name->getArgu(*(victim_ip + broad_cnt), scan_ip_list.length(), true);
+                host_name->getArgu(*(victim_ip + broad_cnt), true);
                 broad_cnt++;
                 if(((time_scan.elapsed() / 1000) % 10) < 15) send_broad(packet, pkthdr->len, pcap);
             }

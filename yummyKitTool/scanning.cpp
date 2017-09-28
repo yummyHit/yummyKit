@@ -46,7 +46,7 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     ui->scanning_text->setEnabled(false);
     system("sudo rm ./nbtscan_check.txt ./nbtscan_log.txt");
 
-    if(ui->StartBtn->isEnabled()) findDevs();
+    if(ui->StartBtn->isEnabled() && !this->start_cnt) findDevs();
 }
 
 scanning::~scanning() {
@@ -69,7 +69,6 @@ void scanning::on_StartBtn_clicked() {
 
         sys_ip = scanIP;
         if(sys.isEmpty()) {
-            this->start_cnt = false;
             sys.append("arp -d ");
             sys.append(sys_ip);
             scanThread = new scanning_thread();
@@ -162,7 +161,6 @@ void scanning::scanGetLength(QStringList len_list) {
         scan_stop = true;
     }
     else scanLen = len_list;
-    qDebug() << scanLen;
 }
 
 void scanning::scanGetMacList(QString mac_list) {

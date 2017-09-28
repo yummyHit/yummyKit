@@ -29,7 +29,7 @@ void MainWindow::on_actionIP_Scan_triggered() {
     connect(scan, SIGNAL(scanSetLength(QStringList)), this, SLOT(mainGetLength(QStringList)));
     connect(scan, SIGNAL(scanSetMacList(QStringList)), this, SLOT(mainGetMacList(QStringList)));
     connect(scan, SIGNAL(scanSetPacket(u_char*)), this, SLOT(mainGetPacket(u_char*)));
-    connect(scan, SIGNAL(scanSetPcap(pcap_t*)), this, SLOT(mainGetPcap(pcap_t*)));
+    if(mainPcap == NULL) connect(scan, SIGNAL(scanSetPcap(pcap_t*)), this, SLOT(mainGetPcap(pcap_t*)));
     connect(scan, SIGNAL(scanSetDevName(pcap_if_t*)), this, SLOT(mainGetDevName(pcap_if_t*)));
     connect(scan, SIGNAL(scanSetStop(bool)), this, SLOT(mainGetStop(bool)));
     scan->exec();

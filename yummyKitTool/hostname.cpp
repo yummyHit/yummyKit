@@ -11,7 +11,6 @@
 
 QStringList hostIPList, hostName;
 u_char *hostIP;
-int host_idx = 0;
 
 void host_filter(u_char*);
 QString getHex2String(u_char *s);
@@ -20,10 +19,10 @@ hostname::hostname(QObject *parent) : QThread(parent) {
     std::ifstream fin;
     char buf[10];
 
-    if(host_idx == 1) this->idx = 0;
-    else this->idx = host_idx;
+    if(hostIPList.length() == 1) this->idx = 0;
+    else if(hostIPList.length() > 1 && this->host_stop && !this->start_flag) this->idx = hostIPList.length();
     this->host_stop = false;
-    this->start_flag = false;
+    this->start_flag = true;
     system("sudo nbtscan | grep Usage >./nbtscan_log.txt");
     fin.open("./nbtscan_log.txt");
     while(fin >> buf) {}
@@ -37,22 +36,22 @@ hostname::hostname(QObject *parent) : QThread(parent) {
         if(strncmp(buf, "success", 7)) {
             system("echo 'You must run yummyKit with root. Please re-run.' > ./nbtscan_log.txt");
             this->host_stop = true;
+            this->start_flag = false;
+            qDebug() << "What!!";
         }
     }
 }
 
 void hostname::run() {
-    QTime time;
     std::ifstream fin;
     QString nbt;
     char buf[256];
-    time.start();
     while(1) {
-        if(!hostIPList.isEmpty() && this->idx == 0 && this->start_flag) {
+        if(!hostIPList.isEmpty() && this->idx == 0) {
             hostName << "Router";
             emit hostnameSetHostList(hostName);
             this->idx++;
-        } else if (!hostIPList.isEmpty() && this->idx != 0 && this->start_flag) {
+        } else if (!hostIPList.isEmpty() && this->idx > 0 && this->idx < hostIPList.length()) {
             memset(buf, 0, 256);
             nbt.append("sudo nbtscan ");
             nbt.append(hostIPList.at(this->idx));
@@ -67,15 +66,8 @@ void hostname::run() {
             emit hostnameSetHostList(hostName);
             nbt.clear();
             this->idx++;
-            if(this->idx == hostIPList.length() && this->host_stop) break;
-            else if(this->idx == hostIPList.length()) {
-                while(1) if(((time.elapsed() / 1000) % 21) == 20) break;
-                if(this->idx == hostIPList.length()) {
-                    this->host_stop = true;
-                    break;
-                }
-            }
         }
+        if(this->idx == hostIPList.length() && this->host_stop && !this->start_flag) break;
     }
     system("sudo rm ./nbtscan_log.txt ./nbtscan.txt");
 }
@@ -176,9 +168,8 @@ void hostname::hostStop(bool s) {
     mut.unlock();
 }
 
-void hostname::getArgu(u_char *list, int index, bool flag) {
+void hostname::getArgu(u_char *list, bool flag) {
     hostIPList << getHex2String(list);
     hostIP = list;
-    host_idx = index;
     this->start_flag = flag;
 }

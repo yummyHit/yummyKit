@@ -13,7 +13,7 @@ public:
     explicit hostname(QObject *parent = 0);
     void run();
     void hostStop(bool);
-    void getArgu(u_char*, int, bool);
+    void getArgu(u_char*, bool);
 
     bool host_stop, start_flag;
 signals:
