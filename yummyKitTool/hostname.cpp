@@ -19,8 +19,8 @@ hostname::hostname(QObject *parent) : QThread(parent) {
     std::ifstream fin;
     char buf[10];
 
-    if(hostIPList.length() == 1) this->idx = 0;
-    else if(hostIPList.length() > 1 && this->host_stop && !this->start_flag) this->idx = hostIPList.length();
+    this->idx = 0;
+    if(hostIPList.length() > 1 && this->host_stop && !this->start_flag) this->idx = hostIPList.length();
     this->host_stop = false;
     this->start_flag = true;
     system("sudo nbtscan | grep Usage >./nbtscan_log.txt");

