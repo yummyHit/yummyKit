@@ -36,7 +36,8 @@ SOURCES += main.cpp\
     relay_spoof.cpp \
     hostname.cpp \
     wifi_cracking.cpp \
-    scanning_thread.cpp
+    scanning_thread.cpp \
+    common_func.cpp
 
 HEADERS  += mainwindow.h \
     scanning.h \
@@ -48,7 +49,8 @@ HEADERS  += mainwindow.h \
 #    statusq.h \
     hostname.h \
     wifi_cracking.h \
-    scanning_thread.h
+    scanning_thread.h \
+    common_func.h
 
 FORMS    += mainwindow.ui \
     scanning.ui \

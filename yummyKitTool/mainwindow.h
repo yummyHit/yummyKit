@@ -7,6 +7,7 @@
 #include "falsify.h"
 #include "scanning.h"
 #include "wifi_cracking.h"
+#include "common_func.h"
 
 namespace Ui {
 class MainWindow;

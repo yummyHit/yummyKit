@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QtCore>
 #include <QtWidgets>
+#include "common_func.h"
 #include "relay_falsify.h"
 #include "relay_spoof.h"
 

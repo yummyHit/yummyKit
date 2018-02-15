@@ -2,7 +2,6 @@
 #include "ui_mainwindow.h"
 #include <QtCore>
 #include <QtWidgets>
-#include <pcap.h>
 
 QStringList mainIPList, mainLen, mainMacList;
 u_char *mainPacket;

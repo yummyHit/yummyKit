@@ -6,6 +6,7 @@
 #include <QtWidgets>
 #include "mainwindow.h"
 #include "spoofurl.h"
+#include "common_func.h"
 
 namespace Ui {
 class falsify;

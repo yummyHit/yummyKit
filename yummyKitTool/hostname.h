@@ -4,7 +4,7 @@
 #include <QThread>
 #include <QtCore>
 #include <QtWidgets>
-#include <pcap.h>
+#include "common_func.h"
 
 class hostname : public QThread
 {

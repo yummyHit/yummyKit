@@ -5,13 +5,13 @@ INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev li
 TITLE="If it is finish that download qt and install package files, print out \"Success\""
 FINISH="\"Success\""
 
-echo "\n"
+echo 
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-echo "\n"
+echo 
 printf "%*s\n" $(((${#TITLE}+$(tput cols))/2)) "$TITLE"
-echo "\n"
+echo 
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-echo "\n"
+echo 
 #if [ $ARCH = "x86_64" ] ; then
 #	FILE="qt-opensource-linux-x64-5.5.1.run"
 #else
@@ -25,6 +25,7 @@ echo "\n"
 SUDO_FAILED="\"You must change permission from user to root! cuz Install Packages!\""
 INSTALL_SUCCESS="\"Packages install finished!! Now we build yummyKit tool...\""
 BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in terminal \"sudo ./yummyKit\" Just do it!\""
+BUILD_FAILED="\"Build failed.. No such libnet-header.h file in libnet directory.\"" 
 #if [ ! -e $FILE ] ; then
 #	echo "\n"
 #	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
@@ -107,39 +108,61 @@ BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in termi
 #	echo $FAST_GUI > ./qt-fast-installer-gui.qs
 #	chmod +x ./$FILE
 #	./$FILE --script ./qt-fast-installer-gui.qs
-if [ $PERMISSION = "root" ] ; then
-	sudo apt-get update >/dev/null
-	sudo apt-get -y install $INSTALL_LIST >/dev/null
-	if [ $ARCH = "x86_64" ] ; then
+if [ "$PERMISSION" = "root" ] ; then
+	sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1
+	if [ "$ARCH" = "x86_64" ] ; then
 		sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/x86_64-linux-gnu/qt5/bin/qmake /usr/bin/qmake
 	else
 		sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/i386-linux-gnu/qt5/bin/qmake /usr/bin/qmake
 	fi
-	echo "\n"
+	echo 
 	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo "\n"
+	echo 
 	printf "%*s\n" $(((${#INSTALL_SUCCESS}+$(tput cols))/2)) "$INSTALL_SUCCESS"
-	echo "\n"
+	echo 
 #	mkdir ./build && mv ./Makefile ./build
 #	sudo rm ./$FILE ./qt-fast-installer-gui.qs
-	make >/dev/null 2>/dev/null && sudo rm *.cpp *.o *.h
-	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo "\n"
-	printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
-	echo "\n"
-	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo "\n"
-	printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
-	echo "\n"
-	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo "\n"
+	if [ -f "/usr/include/libnet/libnet-headers.h" ] && [ $(cat "/usr/include/libnet/libnet-headers.h" 2>/dev/null | grep -i "address information allocated dynamically" | wc -l) -eq 1 ]; then
+		libnet_header=$(cat "/usr/include/libnet/libnet-headers.h" | sed -e 's/\/\*\ address\ information\ allocated\ dynamically\ \*\//u_char ar_sha[6], ar_spa[4], ar_dha[6], ar_dpa[4];/g')
+		echo "$libnet_header" > /usr/include/libnet/libnet-headers.h
+		make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo 
+		printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
+		echo 
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo 
+		printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
+		echo 
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo
+	elif [ -f "/usr/include/libnet/libnet-headers.h" ]; then 
+		make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo 
+		printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
+		echo 
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo 
+		printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
+		echo 
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo
+	else
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo 
+		printf "%*s\n" $(((${#BUILD_FAILED}+$(tput cols))/2)) "$BUILD_FAILED"
+		echo 
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo
+	fi
 else
-	echo "\n"
+	echo 
 	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo "\n"
+	echo 
 #	printf "%*s\n" $(((${#WGET_FAILED}+$(tput cols))/2)) "$WGET_FAILED"
 	printf "%*s\n" $(((${#SUDO_FAILED}+$(tput cols))/2)) "$SUDO_FAILED"
-	echo "\n"
+	echo 
 	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo "\n"
+	echo 
 fi

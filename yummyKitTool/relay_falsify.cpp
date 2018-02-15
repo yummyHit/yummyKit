@@ -1,11 +1,6 @@
 #include "relay_falsify.h"
 #include <QCoreApplication>
-#include <pcap.h>
 #include <QHostAddress>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <libnet.h>
 #define IP_ADDR_LEN 4
 
 void request_packet();

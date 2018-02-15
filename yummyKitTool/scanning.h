@@ -5,7 +5,7 @@
 #include <QtCore>
 #include <QtWidgets>
 #include <QThread>
-#include <pcap.h>
+#include "common_func.h"
 #include "scanning_thread.h"
 
 namespace Ui {

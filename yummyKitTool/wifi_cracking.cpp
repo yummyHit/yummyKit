@@ -1,20 +1,13 @@
 #include "wifi_cracking.h"
 #include "ui_wifi_cracking.h"
-#include <iostream>
-#include <fstream>
 
 wifi_cracking::wifi_cracking(QWidget *parent) : QDialog(parent), ui(new Ui::wifi_cracking) {
     ui->setupUi(this);
-    std::ifstream fin;
-    char buf[10];
+//    std::ifstream fin;
+    char buf[32];
 
-    system("lshw -class network | grep Wireless | awk \'{ print $2 }\' > ./wifi_log.txt");
-    system("ls -l | grep wifi_log.txt | awk \'{ print $5 }\' > ./wifi_check.txt");
-
-    fin.open("./wifi_check.txt");
-    while(fin >> buf) {}
-    fin.close();
-    if(!strcmp(buf, "0")) {
+    popen_used("lshw -class network | grep -i wireless | awk '{ print $2 }'", buf, sizeof(buf));
+    if(strlen(buf) <= 1) {
         ui->StartBtn->setEnabled(false);
         ui->StopBtn->setEnabled(false);
         ui->SelectBtn->setEnabled(false);
@@ -24,7 +17,6 @@ wifi_cracking::wifi_cracking(QWidget *parent) : QDialog(parent), ui(new Ui::wifi
         // iwlist and iwconfig tool install button(QMessageBox)
         // iwlist -> listview, store at ESSID, BSSID, CHANNEL etc
     }
-    system("sudo rm ./wifi_check.txt ./wifi_log.txt");
 }
 
 wifi_cracking::~wifi_cracking()

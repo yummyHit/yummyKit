@@ -5,6 +5,7 @@
 #include <QtCore>
 #include <QtWidgets>
 #include <QThread>
+#include "common_func.h"
 
 namespace Ui {
 class wifi_cracking;

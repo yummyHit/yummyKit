@@ -1,12 +1,6 @@
 #include "scanning_thread.h"
 #include <QCoreApplication>
-#include <pcap.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <netdb.h>
-#include <libnet.h>
+
 #define PROMISCUOUS 1
 #define NONPROMISCUOUS 0
 #define IP_ADDR_LEN 4
@@ -199,7 +193,7 @@ void ip_filter(char *get, u_char *my) {
             tmp.append(imsi);
             imsi = 0;
         }
-        else if(get[j] == 0) {
+        else if(get[j] == 0 || isspace(get[j])) {
             while(1) {
                 imsi += (get[i++] - '0');
                 if(i == j) {

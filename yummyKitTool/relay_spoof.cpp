@@ -1,12 +1,5 @@
 #include "relay_spoof.h"
 #include <QCoreApplication>
-#include <pcap.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <libnet.h>
 
 void get_mac_filter(char *get, u_char *my);
 int flag_check_get(u_char *a, u_char *b);

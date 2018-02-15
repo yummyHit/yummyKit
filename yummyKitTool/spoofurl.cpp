@@ -4,10 +4,6 @@
 #include <QNetworkProxy>
 #include <QNetworkCookie>
 #include <QNetworkCookieJar>
-#include <pcap.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 QStringList spoof_urlList, spoof_dataList;
 pcap_t *goToUrl;

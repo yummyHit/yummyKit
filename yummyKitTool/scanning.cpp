@@ -2,8 +2,6 @@
 
 #include "scanning.h"
 #include "ui_scanning.h"
-#include <iostream>
-#include <fstream>
 
 QString scanIP;
 QStringList scanIPList, scanLen, scanMacList;
@@ -15,25 +13,14 @@ bool scan_stop;
 
 scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     ui->setupUi(this);
-    std::ifstream fin;
-    char buf[10];
+    char buf[20] = {0,};
 
-    system("route -n | grep UG | awk \'{ print $2 }\' > ./nbtscan_log.txt");
-    system("ls -l | grep nbtscan_log.txt | awk \'{ print $5 }\' > ./nbtscan_check.txt");
-
-    fin.open("./nbtscan_check.txt");
-    while(fin >> buf) {}
-    fin.close();
-    if(!strcmp(buf, "0")) {
+    popen_used("route -n | grep -i ug | awk '{ print $2 }'", buf, sizeof(buf));
+    if(strlen(buf) <= 1) {
         ui->StartBtn->setEnabled(false);
-        ui->StopBtn->setEnabled(false);
-        ui->SelectBtn->setEnabled(false);
         ui->scanning_text->setText("You are not connect to Network. Click \'Help\' Button.");
     }
     else if(!this->start_cnt){
-        fin.open("./nbtscan_log.txt");
-        while(fin >> buf) {}
-        fin.close();
         scanIP.append(buf);
         ui->scanning_text->setText("Your router ip address is " + scanIP);
 
@@ -44,7 +31,8 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
         ui->tableView->setModel(simod);
     }
     ui->scanning_text->setEnabled(false);
-    system("sudo rm ./nbtscan_check.txt ./nbtscan_log.txt");
+    ui->SelectBtn->setEnabled(false);
+    ui->StopBtn->setEnabled(false);
 
     if(ui->StartBtn->isEnabled() && !this->start_cnt) findDevs();
 }
@@ -84,6 +72,8 @@ void scanning::on_StartBtn_clicked() {
             simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
         }
         scanThread->start();
+        ui->StopBtn->setEnabled(true);
+        ui->StartBtn->setEnabled(false);
         connect(scanThread, SIGNAL(scanThreadSetIPList(QString)), this, SLOT(scanGetIPList(QString)));
         connect(scanThread, SIGNAL(scanThreadSetLength(QStringList)), this, SLOT(scanGetLength(QStringList)));
         connect(scanThread, SIGNAL(scanThreadSetMacList(QString)), this, SLOT(scanGetMacList(QString)));
@@ -176,6 +166,8 @@ void scanning::scanGetPcap(pcap_t *p) {
     scan_stop = true;
     this->start_cnt = true;
     QMessageBox::information(this, "Success!!", "IP Scan is finish successfully!!");
+    ui->SelectBtn->setEnabled(true);
+    ui->StartBtn->setEnabled(true);
 }
 
 void scanning::stopThread() {
@@ -185,6 +177,7 @@ void scanning::stopThread() {
         system(sys.toStdString().c_str());
         system("arp -a >/dev/null");
     }
+    ui->StopBtn->setEnabled(false);
 }
 
 void scanning::findDevs() {

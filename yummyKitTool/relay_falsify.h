@@ -3,7 +3,7 @@
 
 #include <QThread>
 #include <QtCore>
-#include <pcap.h>
+#include "common_func.h"
 
 class relay_falsify : public QThread
 {
