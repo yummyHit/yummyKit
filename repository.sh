@@ -1,7 +1,7 @@
 #!/bin/sh
 ARCH=$(uname -m)
 PERMISSION=$(whoami)
-INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1* qt5-qmake qt5-default"
+OS_VERSION=$(cat /etc/os-release | grep -i "VERSION_ID" | cut -d '=' -f2- | sed -e 's/\"//g')
 TITLE="If it is finish that download qt and install package files, print out \"Success\""
 FINISH="\"Success\""
 
@@ -110,8 +110,17 @@ APT_SUCCESS=
 #	echo $FAST_GUI > ./qt-fast-installer-gui.qs
 #	chmod +x ./$FILE
 #	./$FILE --script ./qt-fast-installer-gui.qs
+
 if [ "$PERMISSION" = "root" ] ; then
-	sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+	if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "12" ]; then
+		INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev"
+		echo | sudo apt-add-repository ppa:canonical-qt5-edgers/ubuntu1204-qt5
+		sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+	else
+		INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default"
+		sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+	fi
+
 	if [ "$APT_SUCCESS" = "SUCCESS" ]; then
 		if [ "$ARCH" = "x86_64" ] ; then
 			sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/x86_64-linux-gnu/qt5/bin/qmake /usr/bin/qmake
