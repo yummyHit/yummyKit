@@ -26,6 +26,8 @@ SUDO_FAILED="\"You must change permission from user to root! cuz Install Package
 INSTALL_SUCCESS="\"Packages install finished!! Now we build yummyKit tool...\""
 BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in terminal \"sudo ./yummyKit\" Just do it!\""
 BUILD_FAILED="\"Build failed.. No such libnet-header.h file in libnet directory.\"" 
+APT_FAILED="\"apt-get failed.. Isn't dpkg locked or archive cache locked on your system?\""
+APT_SUCCESS=
 #if [ ! -e $FILE ] ; then
 #	echo "\n"
 #	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
@@ -109,49 +111,62 @@ BUILD_FAILED="\"Build failed.. No such libnet-header.h file in libnet directory.
 #	chmod +x ./$FILE
 #	./$FILE --script ./qt-fast-installer-gui.qs
 if [ "$PERMISSION" = "root" ] ; then
-	sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1
-	if [ "$ARCH" = "x86_64" ] ; then
-		sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/x86_64-linux-gnu/qt5/bin/qmake /usr/bin/qmake
+	sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+	if [ "$APT_SUCCESS" = "SUCCESS" ]; then
+		if [ "$ARCH" = "x86_64" ] ; then
+			sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/x86_64-linux-gnu/qt5/bin/qmake /usr/bin/qmake
+			make_file=$(cat $(pwd)/Makefile | sed -e 's/\${OS_VERSION}/x86_64/g')
+			echo "$make_file" > $(pwd)/Makefile
+		else
+			sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/i386-linux-gnu/qt5/bin/qmake /usr/bin/qmake
+			make_file=$(cat $(pwd)/Makefile | sed -e 's/\${OS_VERSION}/i386/g')
+			echo "$make_file" > $(pwd)/Makefile
+		fi
+		echo 
+		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+		echo 
+		printf "%*s\n" $(((${#INSTALL_SUCCESS}+$(tput cols))/2)) "$INSTALL_SUCCESS"
+		echo 
+	#	mkdir ./build && mv ./Makefile ./build
+	#	sudo rm ./$FILE ./qt-fast-installer-gui.qs
+		if [ -f "/usr/include/libnet/libnet-headers.h" ] && [ $(cat "/usr/include/libnet/libnet-headers.h" 2>/dev/null | grep -i "address information allocated dynamically" | wc -l) -eq 1 ]; then
+			libnet_header=$(cat "/usr/include/libnet/libnet-headers.h" | sed -e 's/\/\*\ address\ information\ allocated\ dynamically\ \*\//u_char ar_sha[6], ar_spa[4], ar_dha[6], ar_dpa[4];/g')
+			echo "$libnet_header" > /usr/include/libnet/libnet-headers.h
+			make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo 
+			printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
+			echo 
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo 
+			printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
+			echo 
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo
+		elif [ -f "/usr/include/libnet/libnet-headers.h" ]; then 
+			make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo 
+			printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
+			echo 
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo 
+			printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
+			echo 
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo
+		else
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo 
+			printf "%*s\n" $(((${#BUILD_FAILED}+$(tput cols))/2)) "$BUILD_FAILED"
+			echo 
+			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+			echo
+		fi
 	else
-		sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/i386-linux-gnu/qt5/bin/qmake /usr/bin/qmake
-	fi
-	echo 
-	printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-	echo 
-	printf "%*s\n" $(((${#INSTALL_SUCCESS}+$(tput cols))/2)) "$INSTALL_SUCCESS"
-	echo 
-#	mkdir ./build && mv ./Makefile ./build
-#	sudo rm ./$FILE ./qt-fast-installer-gui.qs
-	if [ -f "/usr/include/libnet/libnet-headers.h" ] && [ $(cat "/usr/include/libnet/libnet-headers.h" 2>/dev/null | grep -i "address information allocated dynamically" | wc -l) -eq 1 ]; then
-		libnet_header=$(cat "/usr/include/libnet/libnet-headers.h" | sed -e 's/\/\*\ address\ information\ allocated\ dynamically\ \*\//u_char ar_sha[6], ar_spa[4], ar_dha[6], ar_dpa[4];/g')
-		echo "$libnet_header" > /usr/include/libnet/libnet-headers.h
-		make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
 		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 		echo 
-		printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
-		echo 
-		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		echo 
-		printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
-		echo 
-		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		echo
-	elif [ -f "/usr/include/libnet/libnet-headers.h" ]; then 
-		make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
-		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		echo 
-		printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
-		echo 
-		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		echo 
-		printf "%*s\n" $(((${#FINISH}+$(tput cols))/2)) "$FINISH"
-		echo 
-		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		echo
-	else
-		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-		echo 
-		printf "%*s\n" $(((${#BUILD_FAILED}+$(tput cols))/2)) "$BUILD_FAILED"
+		printf "%*s\n" $(((${#APT_FAILED}+$(tput cols))/2)) "$APT_FAILED"
 		echo 
 		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 		echo
