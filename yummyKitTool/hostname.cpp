@@ -68,7 +68,10 @@ void hostname::run() {
                 hostName << out_buf;
                 emit hostnameSetHostList(hostName);
             }
-            else host_filter(hostIP);
+            else {
+                host_filter(hostIP);
+                emit hostnameSetHostList(hostName);
+            }
             this->idx++;
         }
         if(this->idx == hostIPList.length() && this->host_stop && !this->start_flag) break;
@@ -132,8 +135,7 @@ void host_filter(u_char *ip) {
     host_addr.sin_family = AF_INET;
 //    host_addr.sin_addr.s_addr = inet_addr(host_tmp);
 //    host_addr.sin_port = 80;
-    int test;
-    if((test = getnameinfo((struct sockaddr *)&host_addr, sizeof(host_addr), host_buf, sizeof(host_buf), NULL, 0, NI_NAMEREQD)) != 0) {
+    if(getnameinfo((struct sockaddr *)&host_addr, sizeof(host_addr), host_buf, sizeof(host_buf), NULL, 0, NI_NAMEREQD)) {
 //        qDebug() <<  gai_strerror(test);
         switch (h_errno) {
                 case NO_ADDRESS:
