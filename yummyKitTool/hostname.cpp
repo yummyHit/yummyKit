@@ -23,7 +23,7 @@ hostname::hostname(QObject *parent) : QThread(parent) {
         if(!strncmp(buf, "Ubuntu", 6) || !strncmp(buf, "Debian", 6)) popen_used("sudo apt-get install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
         else if(!strncmp(buf, "CentOS", 6) || !strncmp(buf, "Fedora", 6) || !strncmp(buf, "Oracle", 6) || !strncmp(buf, "RHEL", 4)) popen_used("sudo yum install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
 
-        if(strncmp(buf, "success", 7)) {
+        if(!strncmp(buf, "success", 7)) {
 //            QMessageBox::information(this , "Error", "You must run yummyKit with root. Please re-run.");
             this->host_stop = true;
             this->start_flag = false;

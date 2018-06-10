@@ -163,21 +163,21 @@ if [ "$PERMISSION" = "root" ] ; then
 		FIND_QMAKE_BIN=$(find /usr/lib/ /usr/lib64/ -name "qmake" -type f 2>/dev/null)
 		sudo rm /usr/bin/qmake; sudo ln -s $FIND_QMAKE_BIN /usr/bin/qmake
 		FIND_CPP_DIR=$(find /usr/include/ -name "c++" -type d -exec ls -d {} \; 2>/dev/null | grep -v "linux-gnu")
-		FIND_CPP_VERSION_DIR=$(echo "$FIND_CPP_DIR/$(ls $FIND_CPP_DIR| sort -n | tail -1)" | sed -e "s/\//\\\\\//g")
+		FIND_CPP_VERSION_DIR=$(echo "$FIND_CPP_DIR/$(ls $FIND_CPP_DIR| sort -n | tail -1)" | sed -e 's/\//\\\\\//g')
 		FIND_GCC_INC_DIR=$(find /usr/lib/gcc/ -name "include" -type d -exec dirname {} \; 2>/dev/null | tail -1)
 		if [ "${OS_NAME}" = "Ubuntu" ]; then
 			if [ "$ARCH" = "x86_64" ] ; then
-				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/x86_64-linux-gnu\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu\/c++\/5/g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu\/qt5/g' | sed -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/x86_64-linux-gnu\/qt5/g' | sed -e 's/LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu/g' | sed -e 's/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g' | sed -e 's/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu\/c++\/5/g' | sed -e 's/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g' | sed -e 's/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g')
 			else
-				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/i386-linux-gnu\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/i386-linux-gnu\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib\/i386-linux-gnu/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/i386-linux-gnu\/c++\/5/g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/i386-linux-gnu\/qt5/g' | sed -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/i386-linux-gnu\/qt5/g' | sed -e 's/LIB_DIR_TO_SHELL/\/usr\/lib\/i386-linux-gnu/g' | sed -e 's/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g' | sed -e 's/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/i386-linux-gnu\/c++\/5/g' | sed -e 's/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g' | sed -e 's/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g')
 			fi
 
 			echo "$make_file" > $(pwd)/Makefile
 		elif [ "${OS_NAME}" = "Fedora" ] || [ "${OS_NAME}" = "CentOS" ]; then
 			if [ "$ARCH" = "x86_84" ]; then
-				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib64\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib64/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL//g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL//g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib64\/qt5/g' | sed -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g' | sed -e 's/LIB_DIR_TO_SHELL/\/usr\/lib64/g' | sed -e 's/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g' | sed -e 's/UBUNTU_CPP_DIR_TO_SHELL//g' | sed -e 's/UBUNTU_GNU_DIR_TO_SHELL//g' | sed -e 's/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g')
 			else
-				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL//g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL//g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/qt5/g' | sed -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g' | sed -e 's/LIB_DIR_TO_SHELL/\/usr\/lib/g' | sed -e 's/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g' | sed -e 's/UBUNTU_CPP_DIR_TO_SHELL//g' | sed -e 's/UBUNTU_GNU_DIR_TO_SHELL//g' | sed -e 's/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g')
 			fi
 
 			echo "$make_file" > $(pwd)/Makefile

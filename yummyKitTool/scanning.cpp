@@ -17,6 +17,11 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     char buf[20] = {0,};
 
 //    popen_used("route -n | grep -i ug | awk '{ print $2 }'", buf, sizeof(buf));
+    popen_used("id | awk '{print $1}' | cut -d '=' -f2- | awk -F\\( '{print $1}'", buf, sizeof(buf));
+    if(strncmp(buf, "0", 1)) {
+        QMessageBox::critical(this, "UID Error!!", "Your UID is not 0.\nYou must open yummyKit program with UID 0 account!!");
+        exit(1);
+    }
     route.get_route_ip(buf);
     if(strlen(buf) <= 1) {
         ui->StartBtn->setEnabled(false);
@@ -149,11 +154,11 @@ void scanning::scanGetHostList(QStringList host_list) {
 
 void scanning::scanGetLength(QStringList len_list) {
     if(len_list.at(0) == "Host_Error") {
-        QMessageBox::information(this, "Failed!!", "nbtscan package install Error.\nPlease contact the developer. Thank you.");
+        QMessageBox::critical(this, "Failed!!", "nbtscan package install Error.\nPlease contact the developer. Thank you.");
         scan_stop = true;
     }
     else if(len_list.at(0) == "root_squash") {
-        QMessageBox::information(this, "Failed!!", "You must open yummyKit program with root.\nPlease re-run yummyKit with root account!!");
+        QMessageBox::critical(this, "Failed!!", "You must open yummyKit program with root.\nPlease re-run yummyKit with root account!!");
         scan_stop = true;
     }
     else scanLen = len_list;
