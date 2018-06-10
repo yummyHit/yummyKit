@@ -31,26 +31,28 @@ SOURCES += main.cpp\
     scanning.cpp \
     falsify.cpp \
     spoofurl.cpp \
-    routing_thread.cpp \
     relay_falsify.cpp \
     relay_spoof.cpp \
     hostname.cpp \
     wifi_cracking.cpp \
     scanning_thread.cpp \
-    common_func.cpp
+    common_func.cpp \
+    get_gateway.cpp \
+    sslstrip.cpp
 
 HEADERS  += mainwindow.h \
     scanning.h \
     falsify.h \
     spoofurl.h \
-    routing_thread.h \
     relay_falsify.h \
     relay_spoof.h \
 #    statusq.h \
     hostname.h \
     wifi_cracking.h \
     scanning_thread.h \
-    common_func.h
+    common_func.h \
+    get_gateway.h \
+    sslstrip.h
 
 FORMS    += mainwindow.ui \
     scanning.ui \

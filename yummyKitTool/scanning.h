@@ -6,6 +6,7 @@
 #include <QtWidgets>
 #include <QThread>
 #include "common_func.h"
+#include "get_gateway.h"
 #include "scanning_thread.h"
 
 namespace Ui {

@@ -15,7 +15,7 @@ public:
     void hostStop(bool);
     void getArgu(u_char*, bool);
 
-    bool host_stop, start_flag;
+    bool host_stop, start_flag, host_err;
 signals:
     void hostnameSetHostList(QStringList);
 

@@ -13,9 +13,11 @@ bool scan_stop;
 
 scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
     ui->setupUi(this);
+    get_gateway route;
     char buf[20] = {0,};
 
-    popen_used("route -n | grep -i ug | awk '{ print $2 }'", buf, sizeof(buf));
+//    popen_used("route -n | grep -i ug | awk '{ print $2 }'", buf, sizeof(buf));
+    route.get_route_ip(buf);
     if(strlen(buf) <= 1) {
         ui->StartBtn->setEnabled(false);
         ui->scanning_text->setText("You are not connect to Network. Click \'Help\' Button.");
@@ -146,7 +148,11 @@ void scanning::scanGetHostList(QStringList host_list) {
 }
 
 void scanning::scanGetLength(QStringList len_list) {
-    if(len_list.at(0) == "root_squash") {
+    if(len_list.at(0) == "Host_Error") {
+        QMessageBox::information(this, "Failed!!", "nbtscan package install Error.\nPlease contact the developer. Thank you.");
+        scan_stop = true;
+    }
+    else if(len_list.at(0) == "root_squash") {
         QMessageBox::information(this, "Failed!!", "You must open yummyKit program with root.\nPlease re-run yummyKit with root account!!");
         scan_stop = true;
     }

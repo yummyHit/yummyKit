@@ -1,7 +1,31 @@
 #!/bin/sh
 ARCH=$(uname -m)
 PERMISSION=$(whoami)
-OS_VERSION=$(cat /etc/os-release | grep -i "VERSION_ID" | cut -d '=' -f2- | sed -e 's/\"//g')
+
+if [ "$(cat /etc/*-release | egrep -i '(ubuntu|suse|debian|oracle\ linux)')" != "" ]; then
+	if [ "$(cat /etc/*-release | grep -i 'ubuntu')" != "" ]; then
+		OS_NAME="Ubuntu"
+	elif [ "$(cat /etc/*-release | grep -i 'suse')" != "" ]; then
+		OS_NAME="SuSE"
+	elif [ "$(cat /etc/*-release | grep -i 'debian')" != "" ]; then
+		OS_NAME="Debian"
+	else
+		OS_NAME="Oracle"
+	fi
+
+	OS_VERSION=$(cat /etc/os-release | grep -i "VERSION_ID" | cut -d '=' -f2- | sed -e 's/\"//g')
+elif [ "$(cat /etc/*-release | egrep -i '(centos|fedora|red\ hat\ enterprise)')" != "" ]; then
+	if [ "$(cat /etc/*-release | grep -i 'centos')" != "" ]; then
+		OS_NAME="CentOS"
+	elif [ "$(cat /etc/*-release | grep -i 'fedora')" != "" ]; then
+		OS_NAME="Fedora"
+	else
+		OS_NAME="RHEL"
+	fi
+
+	OS_VERSION=$(cat /etc/redhat-release | awk '{ print $3 }')
+fi
+
 TITLE="If it is finish that download qt and install package files, print out \"Success\""
 FINISH="\"Success\""
 
@@ -26,7 +50,7 @@ SUDO_FAILED="\"You must change permission from user to root! cuz Install Package
 INSTALL_SUCCESS="\"Packages install finished!! Now we build yummyKit tool...\""
 BUILD_SUCCESS="\"Build finished!! Now, you can run yummyKit tool. Input in terminal \"sudo ./yummyKit\" Just do it!\""
 BUILD_FAILED="\"Build failed.. No such libnet-header.h file in libnet directory.\"" 
-APT_FAILED="\"apt-get failed.. Isn't dpkg locked or archive cache locked on your system?\""
+APT_FAILED="\"packages install failed.. Isn't dpkg(or yum) locked or archive cache locked on your system?\""
 APT_SUCCESS=
 #if [ ! -e $FILE ] ; then
 #	echo "\n"
@@ -112,25 +136,53 @@ APT_SUCCESS=
 #	./$FILE --script ./qt-fast-installer-gui.qs
 
 if [ "$PERMISSION" = "root" ] ; then
-	if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "12" ]; then
-		INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev"
-		echo | sudo apt-add-repository ppa:canonical-qt5-edgers/ubuntu1204-qt5
-		sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
-	else
-		INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default"
-		sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+	if [ "${OS_NAME}" = "Ubuntu" ]; then
+		if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "12" ]; then
+			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev"
+			echo | sudo apt-add-repository ppa:canonical-qt5-edgers/ubuntu1204-qt5
+			sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+		else
+			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default"
+			sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+		fi
+	elif [ "${OS_NAME}" = "Fedora" ]; then
+		INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel"
+		sudo yum update > /dev/null 2>&1 && sudo yum -y groupinstall 'Development Tools' --skip-broken > /dev/null 2>&1 && sudo yum -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+	elif [ "${OS_NAME}" = "CentOS" ]; then
+		if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "5" ]; then
+			sudo rpm -Uvh http://archives.fedoraproject.org/pub/archive/epel/5/x86_64/epel-release-5-4.noarch.rpm
+			INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel"
+			sudo yum update > /dev/null 2>&1 && sudo yum --enablerepo=extras install -y epel-release > /dev/null 2>&1 && sudo yum -y groupinstall 'Development Tools' --skip-broken > /dev/null 2>&1 && sudo yum -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+		else
+			INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel"
+			sudo yum update > /dev/null 2>&1 && sudo yum --enablerepo=extras install -y epel-release > /dev/null 2>&1 && sudo yum -y groupinstall 'Development Tools' --skip-broken > /dev/null 2>&1 && sudo yum -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
+		fi
 	fi
 
 	if [ "$APT_SUCCESS" = "SUCCESS" ]; then
-		if [ "$ARCH" = "x86_64" ] ; then
-			sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/x86_64-linux-gnu/qt5/bin/qmake /usr/bin/qmake
-			make_file=$(cat $(pwd)/Makefile | sed -e 's/\${OS_VERSION}/x86_64/g')
+		FIND_QMAKE_BIN=$(find /usr/lib/ /usr/lib64/ -name "qmake" -type f 2>/dev/null)
+		sudo rm /usr/bin/qmake; sudo ln -s $FIND_QMAKE_BIN /usr/bin/qmake
+		FIND_CPP_DIR=$(find /usr/include/ -name "c++" -type d -exec ls -d {} \; 2>/dev/null | grep -v "linux-gnu")
+		FIND_CPP_VERSION_DIR=$(echo "$FIND_CPP_DIR/$(ls $FIND_CPP_DIR| sort -n | tail -1)" | sed -e "s/\//\\\\\//g")
+		FIND_GCC_INC_DIR=$(find /usr/lib/gcc/ -name "include" -type d -exec dirname {} \; 2>/dev/null | tail -1)
+		if [ "${OS_NAME}" = "Ubuntu" ]; then
+			if [ "$ARCH" = "x86_64" ] ; then
+				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/x86_64-linux-gnu\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu\/c++\/5/g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+			else
+				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/i386-linux-gnu\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/i386-linux-gnu\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib\/i386-linux-gnu/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/i386-linux-gnu\/c++\/5/g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+			fi
+
 			echo "$make_file" > $(pwd)/Makefile
-		else
-			sudo rm /usr/bin/qmake && sudo ln -s /usr/lib/i386-linux-gnu/qt5/bin/qmake /usr/bin/qmake
-			make_file=$(cat $(pwd)/Makefile | sed -e 's/\${OS_VERSION}/i386/g')
+		elif [ "${OS_NAME}" = "Fedora" ] || [ "${OS_NAME}" = "CentOS" ]; then
+			if [ "$ARCH" = "x86_84" ]; then
+				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib64\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib64/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL//g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL//g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+			else
+				make_file=$(cat $(pwd)/Makefile | sed -e "s/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/qt5/g" | sed -e "s/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g" | sed -e "s/LIB_DIR_TO_SHELL/\/usr\/lib/g" | sed -e "s/CPP_DIR_TO_SHELL/$FIND_CPP_VERSION_DIR/g" | sed -e "s/UBUNTU_CPP_DIR_TO_SHELL//g" | sed -e "s/UBUNTU_GNU_DIR_TO_SHELL//g" | sed -e "s/GCC_LIB_DIR_TO_SHELL/$FIND_GCC_INC_DIR/g")
+			fi
+
 			echo "$make_file" > $(pwd)/Makefile
 		fi
+
 		echo 
 		printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 		echo 
@@ -138,9 +190,10 @@ if [ "$PERMISSION" = "root" ] ; then
 		echo 
 	#	mkdir ./build && mv ./Makefile ./build
 	#	sudo rm ./$FILE ./qt-fast-installer-gui.qs
-		if [ -f "/usr/include/libnet/libnet-headers.h" ] && [ $(cat "/usr/include/libnet/libnet-headers.h" 2>/dev/null | grep -i "address information allocated dynamically" | wc -l) -eq 1 ]; then
-			libnet_header=$(cat "/usr/include/libnet/libnet-headers.h" | sed -e 's/\/\*\ address\ information\ allocated\ dynamically\ \*\//u_char ar_sha[6], ar_spa[4], ar_dha[6], ar_dpa[4];/g')
-			echo "$libnet_header" > /usr/include/libnet/libnet-headers.h
+		FIND_LIBNET_HEADER=$(find /usr/include/ -name "libnet-headers.h" -type f 2>/dev/null | tail -1)
+		if [ -f "$FIND_LIBNET_HEADER" ] && [ $(cat "$FIND_LIBNET_HEADER" 2>/dev/null | grep -i "address information allocated dynamically" | wc -l) -eq 1 ]; then
+			libnet_header=$(cat "$FIND_LIBNET_HEADER" | sed -e 's/\/\*\ address\ information\ allocated\ dynamically\ \*\//u_char ar_sha[6], ar_spa[4], ar_dha[6], ar_dpa[4];/g')
+			echo "$libnet_header" > $FIND_LIBNET_HEADER
 			make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 			echo 
@@ -152,7 +205,7 @@ if [ "$PERMISSION" = "root" ] ; then
 			echo 
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 			echo
-		elif [ -f "/usr/include/libnet/libnet-headers.h" ]; then 
+		elif [ -f "$FIND_LIBNET_HEADER" ]; then 
 			make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 			echo 

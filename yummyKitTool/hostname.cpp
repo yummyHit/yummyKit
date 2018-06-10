@@ -1,6 +1,5 @@
 #include "hostname.h"
 #include <QCoreApplication>
-#define IP_ADDR_LEN 4
 
 QStringList hostIPList, hostName;
 u_char *hostIP;
@@ -16,13 +15,20 @@ hostname::hostname(QObject *parent) : QThread(parent) {
     if(hostIPList.length() > 1 && this->host_stop && !this->start_flag) this->idx = hostIPList.length();
     this->host_stop = false;
     this->start_flag = true;
+    this->host_err = false;
     popen_used("sudo nbtscan -h 2>/dev/null | wc -l", buf, sizeof(buf));
     if(!strncmp(buf, "0", 1)) {
-        popen_used("sudo apt-get install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
+        popen_used("if [ \"$(cat /etc/*-release | egrep -i '(ubuntu|suse|debian|oracle linux)')\" != \"\" ]; then if [ \"$(cat /etc/*-release | grep -i 'ubuntu')\" != \"\" ]; then echo \"Ubuntu\"; elif [ \"$(cat /etc/*-release | grep -i 'suse')\" != \"\" ]; then echo \"SuSE\"; elif [ \"$(cat /etc/*-release | grep -i 'debian')\" != \"\" ]; then echo \"Debian\"; else echo \"Oracle\"; fi; elif [ \"$(cat /etc/*-release | egrep -i '(centos|fedora|red hat enterprise)')\" != \"\" ]; then if [ \"$(cat /etc/*-release | grep -i 'centos')\" != \"\" ]; then echo \"CentOS\"; elif [ \"$(cat /etc/*-release | grep -i 'fedora')\" != \"\" ]; then echo \"Fedora\"; else echo \"RHEL\"; fi; fi", buf, sizeof(buf));
+//        qDebug() << "OS_NAME:" << buf;
+        if(!strncmp(buf, "Ubuntu", 6) || !strncmp(buf, "Debian", 6)) popen_used("sudo apt-get install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
+        else if(!strncmp(buf, "CentOS", 6) || !strncmp(buf, "Fedora", 6) || !strncmp(buf, "Oracle", 6) || !strncmp(buf, "RHEL", 4)) popen_used("sudo yum install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
+
         if(strncmp(buf, "success", 7)) {
 //            QMessageBox::information(this , "Error", "You must run yummyKit with root. Please re-run.");
             this->host_stop = true;
             this->start_flag = false;
+        } else {
+            this->host_err = true;
         }
     }
 }
@@ -62,7 +68,7 @@ void hostname::run() {
                 size_t result = iconv(ic, &in_ptr, &in_size, &out_ptr, &out_buf_left);
                 iconv_close(ic);
                 if(result == -1) {
-                    perror("iconv failed : ");
+//                    perror("iconv failed : ");
                     break;
                 }
                 hostName << out_buf;

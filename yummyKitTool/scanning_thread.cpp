@@ -3,13 +3,9 @@
 
 #define PROMISCUOUS 1
 #define NONPROMISCUOUS 0
-#define IP_ADDR_LEN 4
 
-void mac_filter(char *get, u_char *my, int size);
-u_char filter(char *get, u_char *my);
 void ip_filter(char *get, u_char *my);
 
-int flag_check(u_char *a, u_char *b, int size);
 void send_broad(u_char *packet, int len, pcap_t *pcap);
 u_char getHex(int i);
 QString getIPString(u_char *s);
@@ -42,7 +38,7 @@ void scanning_thread::run() {
     bool break_point;
     int s = 0, i = 0, broad_cnt = 0;
     bpf_u_int32 netp, maskp;
-    struct bpf_program filter;
+    struct bpf_program filtering;
     struct ifreq ifr, ifaddr;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *pcap;
@@ -59,7 +55,7 @@ void scanning_thread::run() {
     strcpy(ifr.ifr_name, alldevs->name);
     ioctl(s, SIOCGIFHWADDR, &ifr);
     for(i = 0; i < ETHER_ADDR_LEN; i++) mac.append(ifr.ifr_hwaddr.sa_data[i]);
-    mac_filter(mac.toHex().data(), my_mac, mac.size());
+    pre_filter(mac.toHex().data(), my_mac, mac.size(), "lower");
     ifaddr.ifr_addr.sa_family = AF_INET;
     strncpy(ifaddr.ifr_name, alldevs->name, IFNAMSIZ-1);
     ioctl(s, SIOCGIFADDR, &ifaddr);
@@ -74,13 +70,13 @@ void scanning_thread::run() {
     pcap = pcap_open_live(alldevs->name, 65535, NONPROMISCUOUS, -1, errbuf);
 
     // Compiles the filter expression into a BPF filter program
-    if (pcap_compile(pcap, &filter, "arp", 0, maskp) == -1) perror("pcap_compile");
-    if (pcap_setfilter(pcap, &filter) == -1) perror("pcap_setfilter");
+    if(pcap_compile(pcap, &filtering, "arp", 0, maskp) == -1) perror("pcap_compile");
+    if(pcap_setfilter(pcap, &filtering) == -1) perror("pcap_setfilter");
 
     if(!host_name->host_stop) host_name->start();
     time_scan.start();
 
-    while(!pcap_stop && !host_name->host_stop) {
+    while(!pcap_stop && !host_name->host_stop && !host_name->host_err) {
         break_point = false;
         if(!sys.isEmpty()) {
             system(sys.toStdString().c_str());
@@ -150,30 +146,14 @@ void scanning_thread::run() {
         emit scanThreadPcap(pcap);
         if(host_name->isRunning()) host_name->hostStop(true);
     }
+    else if(host_name->host_err){
+        scan_length_list.append("Host_Error");
+        emit scanThreadSetLength(scan_length_list);
+    }
     else {
         scan_length_list.append("root_squash");
         emit scanThreadSetLength(scan_length_list);
     }
-}
-
-void mac_filter(char *get, u_char *my, int size) {	// mac address or ip address filter
-    int i, j;
-    if(size == ETHER_ADDR_LEN) for(i = 0, j = 0; i < ETHER_ADDR_LEN; i++, j+=2) filter(get+j, my+i);
-    else for(i = 0, j = 0; i < (ETHER_ADDR_LEN - 2); i++, j+=2) filter(get+j, my+i);
-}
-
-u_char filter(char *get, u_char *my) {
-    if(*get - '0' < 0x10) {
-        *my = (*get - '0') * 0x10;
-        if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
-        else *my += (*(get+1) - '0' == 0x31) ? 0x0A : ((*(get+1) - '0' == 0x32) ? 0x0B : ((*(get+1) - '0' == 0x33) ? 0x0C : ((*(get+1) - '0' == 0x34) ? 0x0D : ((*(get+1) - '0' == 0x35) ? 0x0E : 0x0F))));
-    }
-    else {
-        *my = (*get - '0' == 0x31) ? 0xA0 : ((*get - '0' == 0x32) ? 0xB0 : ((*get - '0' == 0x33) ? 0xC0 : ((*get - '0' == 0x34) ? 0xD0 : ((*get - '0' == 0x35) ? 0xE0 : 0xF0))));
-        if(*(get+1) - '0' < 0x10) *my += (*(get+1) - '0') * 0x01;
-        else *my += (*(get+1) - '0' == 0x31) ? 0x0A : ((*(get+1) - '0' == 0x32) ? 0x0B : ((*(get+1) - '0' == 0x33) ? 0x0C : ((*(get+1) - '0' == 0x34) ? 0x0D : ((*(get+1) - '0' == 0x35) ? 0x0E : 0x0F))));
-    }
-    return *my;
 }
 
 void ip_filter(char *get, u_char *my) {
@@ -206,14 +186,7 @@ void ip_filter(char *get, u_char *my) {
             break;
         }
     }
-    mac_filter(tmp.toHex().data(), my, tmp.size());
-}
-
-int flag_check(u_char *a, u_char *b, int size) {	// compare address and check flags
-    int value = 0;
-    if(size == ETHER_ADDR_LEN) value = (*a != *b ? 1 : ((*(a+1) != *(b+1)) ? 1 : ((*(a+2) != *(b+2)) ? 1 : ((*(a+3) != *(b+3)) ? 1 : ((*(a+4) != *(b+4)) ? 1 : ((*(a+5) != *(b+5)) ? 1 : -1))))));
-    else value = (*a != *b ? 1 : ((*(a+1) != *(b+1)) ? 1 : ((*(a+2) != *(b+2)) ? 1 : ((*(a+3) != *(b+3)) ? 1 : -1))));
-    return value;
+    pre_filter(tmp.toHex().data(), my, tmp.size(), "lower");
 }
 
 void send_broad(u_char *packet, int len, pcap_t *pcap) {
@@ -241,7 +214,7 @@ u_char getHex(int i) {
     QByteArray tmp;
     u_char imsi = 0;
     tmp.append(i);
-    return filter(tmp.toHex().data(), &imsi);;
+    return filter(tmp.toHex().data(), &imsi, "lower");
 }
 
 QString getIPString(u_char *s) {

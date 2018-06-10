@@ -14,8 +14,8 @@
    <string>yummyKit</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
      <widget class="QListView" name="listView">
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
