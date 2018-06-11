@@ -2,11 +2,13 @@
 ARCH=$(uname -m)
 PERMISSION=$(whoami)
 
-if [ "$(cat /etc/*-release | egrep -i '(ubuntu|suse|debian|oracle\ linux)')" != "" ]; then
+if [ "$(cat /etc/*-release | egrep -i '(ubuntu|suse|debian|kali|oracle\ linux)')" != "" ]; then
 	if [ "$(cat /etc/*-release | grep -i 'ubuntu')" != "" ]; then
 		OS_NAME="Ubuntu"
 	elif [ "$(cat /etc/*-release | grep -i 'suse')" != "" ]; then
 		OS_NAME="SuSE"
+	elif [ "$(cat /etc/*-release | grep -i 'kali')" != "" ]; then
+		OS_NAME="Kali"
 	elif [ "$(cat /etc/*-release | grep -i 'debian')" != "" ]; then
 		OS_NAME="Debian"
 	else
@@ -136,7 +138,7 @@ APT_SUCCESS=
 #	./$FILE --script ./qt-fast-installer-gui.qs
 
 if [ "$PERMISSION" = "root" ] ; then
-	if [ "${OS_NAME}" = "Ubuntu" ]; then
+	if [ "${OS_NAME}" = "Ubuntu" ] || [ "${OS_NAME}" = "Kali" ] || [ "${OS_NAME}" = "Debian" ]; then	# Need to Kali, Debian version test
 		if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "12" ]; then
 			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev"
 			echo | sudo apt-add-repository ppa:canonical-qt5-edgers/ubuntu1204-qt5
@@ -165,7 +167,7 @@ if [ "$PERMISSION" = "root" ] ; then
 		FIND_CPP_DIR=$(find /usr/include/ -name "c++" -type d -exec ls -d {} \; 2>/dev/null | grep -v "linux-gnu")
 		FIND_CPP_VERSION_DIR=$(echo "$FIND_CPP_DIR/$(ls $FIND_CPP_DIR | sort -n | tail -1)" | sed -e 's/\//\\\//g')
 		FIND_GCC_INC_DIR=$(find /usr/lib/gcc/ -name "include" -type d -exec dirname {} \; 2>/dev/null | tail -1 | sed -e 's/\//\\\//g')
-		if [ "${OS_NAME}" = "Ubuntu" ]; then
+		if [ "${OS_NAME}" = "Ubuntu" ] || [ "${OS_NAME}" = "Kali" ] || [ "${OS_NAME}" = "Debian" ]; then
 			if [ "$ARCH" = "x86_64" ] ; then
 				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu\/qt5/g' -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/x86_64-linux-gnu\/qt5/g' -e 's/UBUNTU_CPP_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu\/c++\/5/g' -e 's/UBUNTU_GNU_DIR_TO_SHELL/-I\/usr\/include\/x86_64-linux-gnu/g' -e 's/GCC_LIB_DIR_TO_SHELL/'$FIND_GCC_INC_DIR'/g' -e 's/LIB_DIR_TO_SHELL/\/usr\/lib\/x86_64-linux-gnu/g' -e 's/CPP_DIR_TO_SHELL/'$FIND_CPP_VERSION_DIR'/g')
 			else
