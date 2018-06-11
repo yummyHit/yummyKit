@@ -174,7 +174,7 @@ if [ "$PERMISSION" = "root" ] ; then
 
 			echo "$make_file" > $(pwd)/Makefile
 		elif [ "${OS_NAME}" = "Fedora" ] || [ "${OS_NAME}" = "CentOS" ]; then
-			if [ "$ARCH" = "x86_84" ]; then
+			if [ "$ARCH" = "x86_64" ]; then
 				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib64\/qt5/g' -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g' -e 's/UBUNTU_CPP_DIR_TO_SHELL//g' -e 's/UBUNTU_GNU_DIR_TO_SHELL//g' -e 's/GCC_LIB_DIR_TO_SHELL/'$FIND_GCC_INC_DIR'/g' -e 's/LIB_DIR_TO_SHELL/\/usr\/lib64/g' -e 's/CPP_DIR_TO_SHELL/'$FIND_CPP_VERSION_DIR'/g')
 			else
 				make_file=$(cat $(pwd)/Makefile | sed -e 's/QT_LIB_DIR_TO_SHELL/\/usr\/lib\/qt5/g' -e 's/QT_INC_DIR_TO_SHELL/\/usr\/include\/qt5/g' -e 's/UBUNTU_CPP_DIR_TO_SHELL//g' -e 's/UBUNTU_GNU_DIR_TO_SHELL//g' -e 's/GCC_LIB_DIR_TO_SHELL/'$FIND_GCC_INC_DIR'/g' -e 's/LIB_DIR_TO_SHELL/\/usr\/lib/g' -e 's/CPP_DIR_TO_SHELL/'$FIND_CPP_VERSION_DIR'/g')
