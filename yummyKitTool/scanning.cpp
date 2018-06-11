@@ -123,7 +123,7 @@ void scanning::on_CancelBtn_clicked() {
 
 void scanning::scanGetIPList(QString pack_list) {
     scanIPList << pack_list;
-    if(this->start_cnt) {
+    if(this->start_cnt && !scanIPList.isEmpty()) {
         for(int i = md_ip->rowCount(); i < scanIPList.length(); i++) {
             md_ip = new QStandardItem(scanIPList.at(i));
             simod->setItem(i, 0, md_ip);
