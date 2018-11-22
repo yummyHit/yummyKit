@@ -140,11 +140,11 @@ APT_SUCCESS=
 if [ "$PERMISSION" = "root" ] ; then
 	if [ "${OS_NAME}" = "Ubuntu" ] || [ "${OS_NAME}" = "Kali" ] || [ "${OS_NAME}" = "Debian" ]; then	# Need to Kali, Debian version test
 		if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "12" ]; then
-			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev"
+			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev libcurl4-gnutls-dev"
 			echo | sudo apt-add-repository ppa:canonical-qt5-edgers/ubuntu1204-qt5
 			sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 		else
-			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default"
+			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default libcurl4-gnutls-dev"
 			sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 		fi
 	elif [ "${OS_NAME}" = "Fedora" ]; then

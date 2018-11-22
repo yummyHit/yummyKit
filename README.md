@@ -27,6 +27,7 @@ libpcap*
 libnet1-*
 qt5-qmake
 qt5-default
+libcurl4-gnutls-dev
 ```
 
 If you using ubuntu version less than 12 major version, add to repository for qt and qtdeclarative5-dev instead of qt5-something.

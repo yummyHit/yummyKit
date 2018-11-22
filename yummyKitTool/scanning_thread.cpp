@@ -52,7 +52,7 @@ void scanning_thread::run() {
     while(1) if(if_num == ++i) break; else alldevs = alldevs->next;
 
     s = socket(AF_INET, SOCK_DGRAM, 0);
-    strcpy(ifr.ifr_name, alldevs->name);
+    strncpy(ifr.ifr_name, alldevs->name, IFNAMSIZ-1);
     ioctl(s, SIOCGIFHWADDR, &ifr);
     for(i = 0; i < ETHER_ADDR_LEN; i++) mac.append(ifr.ifr_hwaddr.sa_data[i]);
     pre_filter(mac.toHex().data(), my_mac, mac.size(), "lower");

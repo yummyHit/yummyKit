@@ -8,7 +8,6 @@ void host_filter(u_char*);
 QString getHex2String(u_char *s);
 
 hostname::hostname(QObject *parent) : QThread(parent) {
-//    std::ifstream fin;
     char buf[10] = {0,};
 
     this->idx = 0;
@@ -19,12 +18,10 @@ hostname::hostname(QObject *parent) : QThread(parent) {
     popen_used("sudo nbtscan -h 2>/dev/null | wc -l", buf, sizeof(buf));
     if(!strncmp(buf, "0", 1)) {
         popen_used("if [ \"$(cat /etc/*-release | egrep -i '(ubuntu|suse|debian|oracle linux)')\" != \"\" ]; then if [ \"$(cat /etc/*-release | grep -i 'ubuntu')\" != \"\" ]; then echo \"Ubuntu\"; elif [ \"$(cat /etc/*-release | grep -i 'suse')\" != \"\" ]; then echo \"SuSE\"; elif [ \"$(cat /etc/*-release | grep -i 'debian')\" != \"\" ]; then echo \"Debian\"; else echo \"Oracle\"; fi; elif [ \"$(cat /etc/*-release | egrep -i '(centos|fedora|red hat enterprise)')\" != \"\" ]; then if [ \"$(cat /etc/*-release | grep -i 'centos')\" != \"\" ]; then echo \"CentOS\"; elif [ \"$(cat /etc/*-release | grep -i 'fedora')\" != \"\" ]; then echo \"Fedora\"; else echo \"RHEL\"; fi; fi", buf, sizeof(buf));
-//        qDebug() << "OS_NAME:" << buf;
         if(!strncmp(buf, "Ubuntu", 6) || !strncmp(buf, "Debian", 6)) popen_used("sudo apt-get install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
         else if(!strncmp(buf, "CentOS", 6) || !strncmp(buf, "Fedora", 6) || !strncmp(buf, "Oracle", 6) || !strncmp(buf, "RHEL", 4)) popen_used("sudo yum install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
 
         if(!strncmp(buf, "success", 7)) {
-//            QMessageBox::information(this , "Error", "You must run yummyKit with root. Please re-run.");
             this->host_stop = true;
             this->start_flag = false;
         } else {
@@ -34,7 +31,6 @@ hostname::hostname(QObject *parent) : QThread(parent) {
 }
 
 void hostname::run() {
-//    std::ifstream fin;
     char cmd[256] = {0,};
     char in_buf[256] = {0,};
     while(1) {
@@ -47,9 +43,6 @@ void hostname::run() {
             QString hostIP_tmp = hostIPList.at(this->idx);
             const char *str_to_ip = hostIP_tmp.toLatin1().data();
             sprintf(cmd, "sudo nbtscan %s | awk '/^[0-9].*.[0-9].*.[0-9].*.[0-9]/ { print $2 }'", str_to_ip);
-//            nbt.append("sudo nbtscan ");
-//            nbt.append(hostIPList.at(this->idx));
-//            nbt.append(" | awk '/^[0-9].*\.[0-9].*\.[0-9].*\.[0-9]/ { print $2 }'");
             popen_used(cmd, in_buf, sizeof(in_buf));
             size_t in_size = strlen(in_buf);
             if(in_size != 0) {
@@ -82,7 +75,6 @@ void hostname::run() {
         }
         if(this->idx == hostIPList.length() && this->host_stop && !this->start_flag) break;
     }
-//    system("sudo rm -r /tmp/yummykit");
 }
 
 void host_filter(u_char *ip) {

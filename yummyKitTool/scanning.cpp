@@ -22,7 +22,7 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
         QMessageBox::critical(this, "UID Error!!", "Your UID is not 0.\nYou must open yummyKit program with UID 0 account!!");
         exit(1);
     }
-    route.get_route_ip(buf);
+    route.get_route_ip(buf, sizeof(buf));
     if(strlen(buf) <= 1) {
         ui->StartBtn->setEnabled(false);
         ui->scanning_text->setText("You are not connect to Network. Click \'Help\' Button.");
@@ -57,7 +57,7 @@ void scanning::on_StartBtn_clicked() {
     else {
         if(!ui->tableView->currentIndex().isValid() && !this->start_cnt) {
             QMessageBox::warning(this, "Warning!!", "You must select 1 Network Interface at least.\nIf you don't want to select it, click \"Start\" button again.");
-            this->start_cnt = true;
+//            this->start_cnt = true;
             return;
         }
         else if(!this->start_cnt) if_num = ui->tableView->currentIndex().row() + 1;
