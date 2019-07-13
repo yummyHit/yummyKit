@@ -140,23 +140,23 @@ APT_SUCCESS=
 if [ "$PERMISSION" = "root" ] ; then
 	if [ "${OS_NAME}" = "Ubuntu" ] || [ "${OS_NAME}" = "Kali" ] || [ "${OS_NAME}" = "Debian" ]; then	# Need to Kali, Debian version test
 		if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "12" ]; then
-			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev libcurl4-gnutls-dev"
+			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qtdeclarative5-dev libcurl4-gnutls-dev libpcre*-dev"
 			echo | sudo apt-add-repository ppa:canonical-qt5-edgers/ubuntu1204-qt5
 			sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 		else
-			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default libcurl4-gnutls-dev"
+			INSTALL_LIST="build-essential libfontconfig1 mesa-common-dev libglu1-mesa-dev libpcap* libnet1-* qt5-qmake qt5-default libcurl4-gnutls-dev libpcre3-dev"
 			sudo apt-get update > /dev/null 2>&1 && sudo apt-get -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 		fi
 	elif [ "${OS_NAME}" = "Fedora" ]; then
-		INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel"
+		INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel pcre-devel"
 		sudo yum update > /dev/null 2>&1 && sudo yum -y groupinstall 'Development Tools' > /dev/null 2>&1 && sudo yum -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 	elif [ "${OS_NAME}" = "CentOS" ]; then
 		if [ "$(echo $OS_VERSION | tr '.' ' ' | awk '{ print $1 }')" -le "5" ]; then
 			sudo rpm -Uvh http://archives.fedoraproject.org/pub/archive/epel/5/x86_64/epel-release-5-4.noarch.rpm
-			INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel"
+			INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel pcre-devel"
 			sudo yum update > /dev/null 2>&1 && sudo yum --enablerepo=extras install -y epel-release > /dev/null 2>&1 && sudo yum -y groupinstall 'Development Tools' --skip-broken > /dev/null 2>&1 && sudo yum -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 		else
-			INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel"
+			INSTALL_LIST="libpcap* gcc-c++ freetype freetype-devel fontconfig fontconfig-devel libstdc++ mesa-libGL mesa-libGL-devel libdrm-devel libX11-devel libnet* qt5-qtdeclarative-devel pcre-devel"
 			sudo yum update > /dev/null 2>&1 && sudo yum --enablerepo=extras install -y epel-release > /dev/null 2>&1 && sudo yum -y groupinstall 'Development Tools' --skip-broken > /dev/null 2>&1 && sudo yum -y install $INSTALL_LIST > /dev/null 2>&1 && APT_SUCCESS="SUCCESS"
 		fi
 	fi
