@@ -79,3 +79,32 @@ void print_packet(int len, u_char *packet) {
     }
     printf("%02x\n", *packet);
 }
+
+void print_headers(u_char *packet) {
+	char str[INET_ADDRSTRLEN] = {0,};
+    struct libnet_ethernet_hdr *eth;
+	struct libnet_ipv4_hdr *ip;
+	struct libnet_tcp_hdr *tcp;
+
+	eth = (struct libnet_ethernet_hdr *)packet;
+	ip = (struct libnet_ipv4_hdr *)(packet + sizeof(struct libnet_ethernet_hdr));
+	tcp = (struct libnet_tcp_hdr *)(packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr));
+	
+	printf("Src MAC: ");	mac_print(eth->ether_shost);	// source mac address
+	printf("\nDst MAC: "); mac_print(eth->ether_dhost);	// destination mac address
+	printf("\nSrc IP: %s\n", inet_ntop(AF_INET, &ip->ip_src.s_addr, str, sizeof(str)));		// print Source IP Address
+	memset(str, '\0', sizeof(str));
+	printf("Dst IP: %s\n", inet_ntop(AF_INET, &ip->ip_dst.s_addr, str, sizeof(str)));	// print Destination IP Address
+	printf("Src port: %d\n", ntohs(tcp->th_sport));	// print Source TCP Port
+	printf("Dst port: %d\n", ntohs(tcp->th_dport));	// print Destination TCP Port
+}
+
+void mac_print(u_int8_t *eth) {	// print mac address
+	int i = 0;
+	while(i < ETHER_ADDR_LEN) {
+		printf("%02x:", eth[i]);
+		if((i+1) == (ETHER_ADDR_LEN-1))
+			printf("%02x", eth[++i]);
+		i++;
+	}
+}

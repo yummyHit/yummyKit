@@ -22,6 +22,7 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
         QMessageBox::critical(this, "UID Error!!", "Your UID is not 0.\nYou must open yummyKit program with UID 0 account!!");
         exit(1);
     }
+
     route.get_route_ip(buf, sizeof(buf));
     if(strlen(buf) <= 1) {
         ui->StartBtn->setEnabled(false);
@@ -37,6 +38,7 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
         ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
         ui->tableView->setModel(simod);
     }
+
     ui->scanning_text->setEnabled(false);
     ui->SelectBtn->setEnabled(false);
     ui->StopBtn->setEnabled(false);
@@ -52,6 +54,7 @@ void scanning::on_StartBtn_clicked() {
     scan_stop = false;
     int if_num = 1;
     QChar check = *(scanIP.unicode());
+
     if(check.isNull() || !check.isDigit()) QMessageBox::warning(this, "Warning!!", "If you don't know how to use it,\nyou can click 'Help' button.");
     else if(!sys_ip.isEmpty() && scanThread->isRunning()) QMessageBox::warning(this, "Warning!!", "Scanning is already running!!\nIf you want new scan, first click stop button.\nAnd click start button.");
     else {
@@ -66,21 +69,25 @@ void scanning::on_StartBtn_clicked() {
         if(sys.isEmpty()) {
             sys.append("arp -d ");
             sys.append(sys_ip);
+            sys.append(" >/dev/null 2>&1");
             scanThread = new scanning_thread();
         }
         else {
             this->start_cnt = true;
             scanThread = new scanning_thread();
         }
+
         scanThread->scanThreadSetSys(sys, sys_ip, if_num, devs);
         if(!this->start_cnt) {
             simod->clear();
             simod->setHorizontalHeaderItem(0, new QStandardItem(QString("IP Address")));
             simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Host Name")));
         }
+
         scanThread->start();
         ui->StopBtn->setEnabled(true);
         ui->StartBtn->setEnabled(false);
+
         connect(scanThread, SIGNAL(scanThreadSetIPList(QString)), this, SLOT(scanGetIPList(QString)));
         connect(scanThread, SIGNAL(scanThreadSetLength(QStringList)), this, SLOT(scanGetLength(QStringList)));
         connect(scanThread, SIGNAL(scanThreadSetMacList(QString)), this, SLOT(scanGetMacList(QString)));
@@ -186,7 +193,10 @@ void scanning::stopThread() {
         scan_stop = true;
         scanThread->scanThreadSetStop(scan_stop);
         system(sys.toStdString().c_str());
-        system("arp -a >/dev/null");
+		usleep(50000);
+		system("ping 8.8.8.8 -c 1 >/dev/null 2>&1");
+		usleep(50000);
+        system("arp -a >/dev/null 2>&1");
     }
     ui->StopBtn->setEnabled(false);
 }

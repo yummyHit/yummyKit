@@ -78,11 +78,16 @@ void scanning_thread::run() {
 
     while(!pcap_stop && !host_name->host_stop && !host_name->host_err) {
         break_point = false;
+
         if(!sys.isEmpty()) {
             system(sys.toStdString().c_str());
             sys.clear();
+			usleep(50000);
+			system("ping 8.8.8.8 -c 1 >/dev/null 2>&1");
+			usleep(50000);
             system("arp -a >/dev/null");
         }
+
         while(pcap_next_ex(pcap, &pkthdr, (const u_char**)&packet) > 0) {
             eth = (struct libnet_ethernet_hdr *)packet;
             arh = (struct libnet_arp_hdr *)(packet + sizeof(struct libnet_ethernet_hdr));
@@ -140,6 +145,7 @@ void scanning_thread::run() {
             }
         }
     }
+
     if(!scan_ip_list.isEmpty()) {
         emit scanThreadSetLength(scan_length_list);
         emit scanThreadPacket(pkt);
@@ -150,8 +156,11 @@ void scanning_thread::run() {
         scan_length_list.append("Host_Error");
         emit scanThreadSetLength(scan_length_list);
     }
-    else {
+	else if(pcap_stop && !host_name->host_stop) {
         scan_length_list.append("root_squash");
+        emit scanThreadSetLength(scan_length_list);
+	}
+    else {
         emit scanThreadSetLength(scan_length_list);
     }
 }
@@ -193,6 +202,7 @@ void send_broad(u_char *packet, int len, pcap_t *pcap) {
     int i;
     struct libnet_ethernet_hdr eth_h;
     struct libnet_arp_hdr arp_h;
+
     for(i = 0; i < ETHER_ADDR_LEN; i++) {
         *(packet + i) = *(br_f + i);
         *(packet + ETHER_ADDR_LEN + i) = *(my_mac + i);
@@ -203,7 +213,9 @@ void send_broad(u_char *packet, int len, pcap_t *pcap) {
             *(packet + sizeof(eth_h) + sizeof(arp_h) - sizeof(arp_h.ar_dpa) + i) = *(my_ip + i);
         }
     }
+
     *(packet + sizeof(eth_h) + sizeof(arp_h.ar_hrd) + sizeof(arp_h.ar_pro) + sizeof(arp_h.ar_hln) + sizeof(arp_h.ar_pln) + 1) = ARPOP_REQUEST;
+
     for(i = 0; i < 0xFF; i++) {
         *(packet + sizeof(eth_h) + sizeof(arp_h) - 1) = getHex(i);
         pcap_sendpacket(pcap, packet, len);
@@ -219,6 +231,7 @@ u_char getHex(int i) {
 
 QString getIPString(u_char *s) {
     QString str, result = "";
+
     for(int i = 0; i < IP_ADDR_LEN; i++) {
         if(i == 3) str.sprintf("%d", s[i]);
         else str.sprintf("%d.", s[i]);
@@ -230,6 +243,7 @@ QString getIPString(u_char *s) {
 
 QString getMacString(u_char *s) {
     QString str, result = "";
+
     for(int i = 0; i < ETHER_ADDR_LEN; i++) {
         str.sprintf("%02X", s[i]);
         result.append(str);

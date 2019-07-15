@@ -17,9 +17,10 @@
 #include <sys/time.h>
 #include <curl/curl.h>
 
-#define IP_ADDR_LEN 4
+#define IP_ADDR_LEN sizeof(uint32_t)
 #define IP6_ADDR_LEN 16
 #define MAX_IP_ADDR_LEN IP6_ADDR_LEN
+#define MAX_PACKET_SIZE 65536
 #ifndef PATH_MAX
 	#define PATH_MAX 1024
 #endif
@@ -110,5 +111,7 @@ void pre_filter(char *get, u_char *my, int size, char *cap);
 u_char filter(char *get, u_char *my, char *cap);
 int flag_check(u_char *a, u_char *b, int size);
 void print_packet(int len, u_char *packet);
+void print_headers(u_char *packet);
+void mac_print(u_int8_t *eth);
 
 #endif // COMMON_FUNC_H
