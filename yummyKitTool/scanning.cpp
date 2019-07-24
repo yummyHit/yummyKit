@@ -3,6 +3,9 @@
 #include "scanning.h"
 #include "ui_scanning.h"
 
+void index_filter(char *get, u_char *my);
+QString getIndexString(u_char *s);
+
 QString scanIP;
 QStringList scanIPList, scanLen, scanMacList;
 u_char *scanPacket;
@@ -17,8 +20,9 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
 	char buf[20] = {0,};
 
 //	popen_used("route -n | grep -i ug | awk '{ print $2 }'", buf, sizeof(buf));
-	popen_used("id | awk '{print $1}' | cut -d '=' -f2- | awk -F\\( '{print $1}'", buf, sizeof(buf));
-	if(strncmp(buf, "0", 1)) {
+//	popen_used("id | awk '{print $1}' | cut -d '=' -f2- | awk -F\\( '{print $1}'", buf, sizeof(buf));
+//	if(strncmp(buf, "0", 1)) {
+	if(getuid() != 0) {
 		QMessageBox::critical(this, "UID Error!!", "Your UID is not 0.\nYou must open yummyKit program with UID 0 account!!");
 		exit(1);
 	}
@@ -35,7 +39,7 @@ scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
 		simod = new QStandardItemModel(0, 2, this);
 		simod->setHorizontalHeaderItem(0, new QStandardItem(QString("Index")));
 		simod->setHorizontalHeaderItem(1, new QStandardItem(QString("Network Interfaces")));
-		ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+		ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 		ui->tableView->setModel(simod);
 	}
 
@@ -203,12 +207,70 @@ void scanning::stopThread() {
 
 void scanning::findDevs() {
 	pcap_if_t *tmp;
-	char errbuf[256];
+	char errbuf[256] = {0,};
+	u_char ip_tmp[IP_ADDR_LEN] = {0,};
 	int i = 0;
+	struct ifreq ifaddr;
+	int s = socket(AF_INET, SOCK_DGRAM, 0);
+
 	if(pcap_findalldevs(&devs, errbuf) == -1) QMessageBox::warning(this, "Warning!!", "Check your Network Interface Card!!");
 	else for(tmp = devs; tmp; tmp = tmp->next) {
+		memset(ifaddr.ifr_name, '\0', IFNAMSIZ-1);
+		memset(ip_tmp, '\0', IP_ADDR_LEN);
+		ifaddr.ifr_addr.sa_family = AF_INET;
+		strncpy(ifaddr.ifr_name, tmp->name, IFNAMSIZ-1);
+		ioctl(s, SIOCGIFADDR, &ifaddr);
+		index_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), ip_tmp);
 		md_host = new QStandardItem(QString::fromStdString(tmp->name));
-		simod->setItem(i, 0, new QStandardItem(QString::number(i + 1)));
+		if(ip_tmp) simod->setItem(i, 0, new QStandardItem(getIndexString(ip_tmp)));
+		else simod->setItem(i, 0, new QStandardItem(QString("None")));
 		simod->setItem(i++, 1, md_host);
 	}
+
+	shutdown(s, SHUT_RDWR);
+}
+
+void index_filter(char *get, u_char *my) {
+	unsigned i = 0, j = 0, imsi = 0;
+	QByteArray tmp;
+	while(1) {
+		j++;
+		if(get[j] == '.') {
+			while(1) {
+				imsi += (get[i++] - '0');
+				if(i == j) {
+					i++;
+					break;
+				}
+				imsi *= 10;
+			}
+			tmp.append(imsi);
+			imsi = 0;
+		}
+		else if(get[j] == 0 || isspace(get[j])) {
+			while(1) {
+				imsi += (get[i++] - '0');
+				if(i == j) {
+					i++;
+					break;
+				}
+				imsi *= 10;
+			}
+			tmp.append(imsi);
+			break;
+		}
+	}
+	pre_filter(tmp.toHex().data(), my, tmp.size(), "lower");
+}
+
+QString getIndexString(u_char *s) {
+	QString str, result = "";
+
+	for(unsigned i = 0; i < IP_ADDR_LEN; i++) {
+		if(i == 3) str.sprintf("%d", s[i]);
+		else str.sprintf("%d.", s[i]);
+		result.append(str);
+	}
+	str.clear();
+	return result;
 }

@@ -15,7 +15,7 @@ hostname::hostname(QObject *parent) : QThread(parent) {
 	this->host_stop = false;
 	this->start_flag = true;
 	this->host_err = false;
-	popen_used("sudo nbtscan -h 2>/dev/null | wc -l", buf, sizeof(buf));
+	popen_used("sudo nbtscan -h 2>/dev/null | wc -l | sed -e 's/^ *//g' -e 's/^\\t*//g'", buf, sizeof(buf));
 	if(!strncmp(buf, "0", 1)) {
 		popen_used("if [ \"$(cat /etc/*-release | egrep -i '(ubuntu|suse|debian|oracle linux)')\" != \"\" ]; then if [ \"$(cat /etc/*-release | grep -i 'ubuntu')\" != \"\" ]; then echo \"Ubuntu\"; elif [ \"$(cat /etc/*-release | grep -i 'suse')\" != \"\" ]; then echo \"SuSE\"; elif [ \"$(cat /etc/*-release | grep -i 'debian')\" != \"\" ]; then echo \"Debian\"; else echo \"Oracle\"; fi; elif [ \"$(cat /etc/*-release | egrep -i '(centos|fedora|red hat enterprise)')\" != \"\" ]; then if [ \"$(cat /etc/*-release | grep -i 'centos')\" != \"\" ]; then echo \"CentOS\"; elif [ \"$(cat /etc/*-release | grep -i 'fedora')\" != \"\" ]; then echo \"Fedora\"; else echo \"RHEL\"; fi; fi", buf, sizeof(buf));
 		if(!strncmp(buf, "Ubuntu", 6) || !strncmp(buf, "Debian", 6)) popen_used("sudo apt-get install -y nbtscan >/dev/null 2>&1 && if [ $? -eq 0 ]; then echo success; else echo fail; fi;", buf, sizeof(buf));
@@ -34,6 +34,8 @@ void hostname::run() {
 	char cmd[256] = {0,};
 	char in_buf[256] = {0,};
 	while(1) {
+		if(this->idx == 0) sleep(1);
+
 		if(!hostIPList.isEmpty() && this->idx == 0) {
 			hostName << "Router";
 			emit hostnameSetHostList(hostName);
@@ -73,6 +75,7 @@ void hostname::run() {
 			}
 			this->idx++;
 		}
+
 		if(this->idx == hostIPList.length() && this->host_stop && !this->start_flag) break;
 	}
 }

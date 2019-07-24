@@ -85,10 +85,10 @@ void relay_spoof::run() {
 				print_headers(packet);
 	#endif
 
-				if(ntohs(tcp->th_dport) == 443) continue;
+				if(ntohs(tcp->th_sport) == 443) continue;
 				else pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 #endif
-				sendUrl(packet, pkthdr->len);
+//				sendUrl(packet, pkthdr->len);
 			}
 		}
 
@@ -187,7 +187,9 @@ void sendUrl(u_char *packet, int len) {
 	QString tempStr;
 	u_char *text = packet;
 
+//	QTextCodec *codec = QTextCodec::codecForName("UTF-8");
 	for(int i = 0; i < (len - 1); i++) tempStr.append(*(text+i));
+//	qDebug() << "sendUrl : " << codec->fromUnicode(tempStr);
 	qDebug() << "sendUrl : " << tempStr;
 }
 

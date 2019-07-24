@@ -81,12 +81,13 @@ void scanning_thread::run() {
 		break_point = false;
 
 		if(!sys.isEmpty()) {
-			system(sys.toStdString().c_str());
+			// s var is used for ignore warning. Actually it is unused.
+			s = system(sys.toStdString().c_str());
 			sys.clear();
 			usleep(50000);
-			system("ping 8.8.8.8 -c 1 >/dev/null 2>&1");
+			s = system("ping 8.8.8.8 -c 1 >/dev/null 2>&1");
 			usleep(50000);
-			system("arp -a >/dev/null");
+			s = system("arp -a >/dev/null");
 		}
 
 		while(pcap_next_ex(pcap, &pkthdr, (const u_char**)&packet) > 0) {
