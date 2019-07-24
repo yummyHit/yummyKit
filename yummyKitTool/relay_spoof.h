@@ -8,22 +8,22 @@
 
 class relay_spoof : public QThread
 {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    explicit relay_spoof(QObject *parent = 0);
-    void run();
+	explicit relay_spoof(QObject *parent = 0);
+	void run();
 
-    void relayGetMacInfo(QString, QString, QString, pcap_if_t*);
-    bool spoofStop;
+	void relayGetMacInfo(QString, QString, QString, pcap_if_t*);
+	bool spoofStop;
 
 signals:
-    void relay_urlList(QStringList);
-    void relay_dataList(QStringList);
-    void spoof_packet(u_char *);
-    void relay_spoofFin(bool);
+	void relay_urlList(QStringList);
+	void relay_dataList(QStringList);
+	void spoof_packet(u_char *);
+	void relay_spoofFin(bool);
 
 private:
-    QString relayAtkMac, relayRouterMac, relayVictimMac;
+	QString relayAtkMac, relayRouterMac, relayVictimMac;
 };
 
 #endif // RELAY_SPOOF_H

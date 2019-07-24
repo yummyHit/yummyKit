@@ -9,14 +9,14 @@ class bruteforce;
 
 class bruteforce : public QDialog
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit bruteforce(QWidget *parent = 0);
-    ~bruteforce();
+	explicit bruteforce(QWidget *parent = 0);
+	~bruteforce();
 
 private:
-    Ui::bruteforce *ui;
+	Ui::bruteforce *ui;
 };
 
 #endif // BRUTEFORCE_H

@@ -196,7 +196,7 @@ if [ "$PERMISSION" = "root" ] ; then
 		if [ -f "$FIND_LIBNET_HEADER" ] && [ $(cat "$FIND_LIBNET_HEADER" 2>/dev/null | grep -i "address information allocated dynamically" | wc -l) -eq 1 ]; then
 			libnet_header=$(cat "$FIND_LIBNET_HEADER" | sed -e 's/\/\*\ address\ information\ allocated\ dynamically\ \*\//u_char ar_sha[6], ar_spa[4], ar_dha[6], ar_dpa[4];/g')
 			echo "$libnet_header" > $FIND_LIBNET_HEADER
-			make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
+			qmake -recursive > /dev/null 2>&1 && make > /dev/null 2>&1 && rm -rf objs
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 			echo 
 			printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"
@@ -208,7 +208,7 @@ if [ "$PERMISSION" = "root" ] ; then
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 			echo
 		elif [ -f "$FIND_LIBNET_HEADER" ]; then 
-			make > /dev/null 2>&1 && sudo rm *.cpp *.o *.h
+			qmake -recursive > /dev/null 2>&1 && make > /dev/null 2>&1 && rm -rf objs
 			printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 			echo 
 			printf "%*s\n" $(((${#BUILD_SUCCESS}+$(tput cols))/2)) "$BUILD_SUCCESS"

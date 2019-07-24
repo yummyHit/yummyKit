@@ -17,14 +17,14 @@
 char gateway[255] = {0,};
 
 enum {
-    U = 0x01, // This flag signifies that the route is up
-    G = 0x02, // This flag signifies that the route is to a gateway. If this flag is not present then we can say that the route is to a directly connected destination
-    H = 0x04, // This flag signifies that the route is to a host which means that the destination is a complete host address. If this flag is not present then it can be assumed that the route is to a network and destination would be a network address.
-    D = 0x08, // This flag signifies that this route is created by a redirect.
-    M = 0x10 // This flag signifies that this route is modified by a redirect.
+	U = 0x01, // This flag signifies that the route is up
+	G = 0x02, // This flag signifies that the route is to a gateway. If this flag is not present then we can say that the route is to a directly connected destination
+	H = 0x04, // This flag signifies that the route is to a host which means that the destination is a complete host address. If this flag is not present then it can be assumed that the route is to a network and destination would be a network address.
+	D = 0x08, // This flag signifies that this route is created by a redirect.
+	M = 0x10 // This flag signifies that this route is modified by a redirect.
 };
 
-char * const real_flag[16] = {
+const char * real_flag[16] = {
 	"",
 	"U",
 	"G",
@@ -44,49 +44,49 @@ char * const real_flag[16] = {
 };
 
 struct route_info {
-    struct in_addr dstAddr;
-    struct in_addr srcAddr;
-    struct in_addr gateWay;
-    struct in_addr netmask;
-    int flags;
-    int metric;
-    int reference;
-    char ifName[IF_NAMESIZE];
+	struct in_addr dstAddr;
+	struct in_addr srcAddr;
+	struct in_addr gateWay;
+	struct in_addr netmask;
+	int flags;
+	int metric;
+	int reference;
+	char ifName[IF_NAMESIZE];
 };
 
 int readNlSock(int sockFd, char *bufPtr, int seqNum, int pId) {
-    struct nlmsghdr *nlHdr;
-    int readLen = 0, msgLen = 0;
+	struct nlmsghdr *nlHdr;
+	int readLen = 0, msgLen = 0;
 
-    do {
-        // Recieve response from the kernel
-        if((readLen = recv(sockFd, bufPtr, BUFSIZE - msgLen, 0)) < 0) {
-            perror("SOCK READ: ");
-            return -1;
-        }
+	do {
+		// Recieve response from the kernel
+		if((readLen = recv(sockFd, bufPtr, BUFSIZE - msgLen, 0)) < 0) {
+			perror("SOCK READ: ");
+			return -1;
+		}
 
-        nlHdr = (struct nlmsghdr *) bufPtr;
+		nlHdr = (struct nlmsghdr *) bufPtr;
 
-        // Check if the header is valid
-        if((NLMSG_OK(nlHdr, readLen) == 0) || (nlHdr->nlmsg_type == NLMSG_ERROR)) {
-            perror("Error in recieved packet");
-            return -1;
-        }
+		// Check if the header is valid
+		if((NLMSG_OK(nlHdr, readLen) == 0) || (nlHdr->nlmsg_type == NLMSG_ERROR)) {
+			perror("Error in recieved packet");
+			return -1;
+		}
 
-        // Check if the its the last message Else move the pointer to buffer appropriately
-        if(nlHdr->nlmsg_type == NLMSG_DONE) {
-            break;
-        } else {
-            bufPtr += readLen;
-            msgLen += readLen;
-        }
+		// Check if the its the last message Else move the pointer to buffer appropriately
+		if(nlHdr->nlmsg_type == NLMSG_DONE) {
+			break;
+		} else {
+			bufPtr += readLen;
+			msgLen += readLen;
+		}
 
-        // Check if its a multi part message
-        if((nlHdr->nlmsg_flags & NLM_F_MULTI) == 0) {
-            break;
-        }
-    } while((nlHdr->nlmsg_seq != seqNum) || (nlHdr->nlmsg_pid != pId));
-    return msgLen;
+		// Check if its a multi part message
+		if((nlHdr->nlmsg_flags & NLM_F_MULTI) == 0) {
+			break;
+		}
+	} while((nlHdr->nlmsg_seq != seqNum) || (nlHdr->nlmsg_pid != pId));
+	return msgLen;
 }
 
 #if 0
@@ -155,7 +155,7 @@ void printRoute(struct route_info *rtInfo) {
 }
 
 void printGateway() {
-    printf("%s\n", gateway);
+	printf("%s\n", gateway);
 }
 #endif
 
@@ -203,54 +203,54 @@ void parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo) {
 	if(!ioctl(fd, SIOCGIFNETMASK, &ifr))
 		rtInfo->netmask.s_addr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
 
-    if(rtInfo->dstAddr.s_addr == 0) sprintf(gateway, "%s", (char *) inet_ntoa(rtInfo->gateWay));
+	if(rtInfo->dstAddr.s_addr == 0) sprintf(gateway, "%s", (char *) inet_ntoa(rtInfo->gateWay));
 //	printRoute(rtInfo);
 
 	return;
 }
 
 void get_gateway::get_route_ip(char *route, int route_len) {
-    strncpy(route, gateway, route_len);
+	strncpy(route, gateway, route_len);
 }
 
 get_gateway::get_gateway() {
-    struct nlmsghdr *nlMsg;
-    struct route_info *rtInfo;
-    char msgBuf[BUFSIZE] = {0,};
+	struct nlmsghdr *nlMsg;
+	struct route_info *rtInfo;
+	char msgBuf[BUFSIZE] = {0,};
 
-    int sock = 0, len = 0, msgSeq = 0;
+	int sock = 0, len = 0, msgSeq = 0;
 
-    // Create Socket
-    if((sock = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE)) < 0) perror("Socket Creation: ");
+	// Create Socket
+	if((sock = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE)) < 0) perror("Socket Creation: ");
 
-    memset(msgBuf, 0, BUFSIZE);
+	memset(msgBuf, 0, BUFSIZE);
 
-    // point the header and the msg structure pointers into the buffer
-    nlMsg = (struct nlmsghdr *) msgBuf;
+	// point the header and the msg structure pointers into the buffer
+	nlMsg = (struct nlmsghdr *) msgBuf;
 
-    // Fill in the nlmsg header
-    nlMsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));  // Length of message.
-    nlMsg->nlmsg_type = RTM_GETROUTE;   // Get the routes from kernel routing table .
+	// Fill in the nlmsg header
+	nlMsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));  // Length of message.
+	nlMsg->nlmsg_type = RTM_GETROUTE;   // Get the routes from kernel routing table .
 
-    nlMsg->nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST;    // The message is a request for dump.
-    nlMsg->nlmsg_seq = msgSeq++;    // Sequence of the message packet.
-    nlMsg->nlmsg_pid = getpid();    // PID of process sending the request.
+	nlMsg->nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST;	// The message is a request for dump.
+	nlMsg->nlmsg_seq = msgSeq++;	// Sequence of the message packet.
+	nlMsg->nlmsg_pid = getpid();	// PID of process sending the request.
 
-    // Send the request
-    if(send(sock, nlMsg, nlMsg->nlmsg_len, 0) < 0)
-        perror("Write To Socket Failed...\n");
+	// Send the request
+	if(send(sock, nlMsg, nlMsg->nlmsg_len, 0) < 0)
+		perror("Write To Socket Failed...\n");
 
-    // Read the response
-    if((len = readNlSock(sock, msgBuf, msgSeq, getpid())) < 0)
-        perror("Read From Socket Failed...\n");
+	// Read the response
+	if((len = readNlSock(sock, msgBuf, msgSeq, getpid())) < 0)
+		perror("Read From Socket Failed...\n");
 
-    // Parse and print the response
-    rtInfo = (struct route_info *) malloc(sizeof(struct route_info));
-//	fprintf(stdout, "Kernel IP routing table\nDestination     Gateway         Genmask         Flags Metric Ref    Use Iface\n");
-    for(; NLMSG_OK(nlMsg, len); nlMsg = NLMSG_NEXT(nlMsg, len)) {
-        memset(rtInfo, 0, sizeof(struct route_info));
-        parseRoutes(nlMsg, rtInfo);
-    }
-    free(rtInfo);
-    close(sock);
+	// Parse and print the response
+	rtInfo = (struct route_info *) malloc(sizeof(struct route_info));
+//	fprintf(stdout, "Kernel IP routing table\nDestination	 Gateway		 Genmask		 Flags Metric Ref	Use Iface\n");
+	for(; NLMSG_OK(nlMsg, len); nlMsg = NLMSG_NEXT(nlMsg, len)) {
+		memset(rtInfo, 0, sizeof(struct route_info));
+		parseRoutes(nlMsg, rtInfo);
+	}
+	free(rtInfo);
+	close(sock);
 }

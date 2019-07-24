@@ -4,10 +4,10 @@
  <widget class="QDialog" name="falsify">
   <property name="geometry">
    <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>449</width>
-    <height>250</height>
+	<x>0</x>
+	<y>0</y>
+	<width>449</width>
+	<height>250</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,121 +15,121 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Router Mac</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="routerMacEdit"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>My Mac</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Fixed</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>15</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="myMacEdit"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
-       <item>
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Victim Mac</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="targetMacEdit"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
-       <item>
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>Source IP</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="srcAddressEdit"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>Destination IP</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="dstAddressEdit"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_5">
-       <item>
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="SpoofBtn">
-         <property name="text">
-          <string>Spoof</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="CancelBtn">
-         <property name="text">
-          <string>Cancel</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
+	<layout class="QVBoxLayout" name="verticalLayout">
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout">
+	   <item>
+		<widget class="QLabel" name="label">
+		 <property name="text">
+		  <string>Router Mac</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QLineEdit" name="routerMacEdit"/>
+	   </item>
+	  </layout>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout_2">
+	   <item>
+		<widget class="QLabel" name="label_2">
+		 <property name="text">
+		  <string>My Mac</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<spacer name="horizontalSpacer">
+		 <property name="orientation">
+		  <enum>Qt::Horizontal</enum>
+		 </property>
+		 <property name="sizeType">
+		  <enum>QSizePolicy::Fixed</enum>
+		 </property>
+		 <property name="sizeHint" stdset="0">
+		  <size>
+		   <width>15</width>
+		   <height>20</height>
+		  </size>
+		 </property>
+		</spacer>
+	   </item>
+	   <item>
+		<widget class="QLineEdit" name="myMacEdit"/>
+	   </item>
+	  </layout>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout_3">
+	   <item>
+		<widget class="QLabel" name="label_3">
+		 <property name="text">
+		  <string>Victim Mac</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QLineEdit" name="targetMacEdit"/>
+	   </item>
+	  </layout>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout_4">
+	   <item>
+		<widget class="QLabel" name="label_4">
+		 <property name="text">
+		  <string>Source IP</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QLineEdit" name="srcAddressEdit"/>
+	   </item>
+	   <item>
+		<widget class="QLabel" name="label_5">
+		 <property name="text">
+		  <string>Destination IP</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QLineEdit" name="dstAddressEdit"/>
+	   </item>
+	  </layout>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout_5">
+	   <item>
+		<spacer name="horizontalSpacer_2">
+		 <property name="orientation">
+		  <enum>Qt::Horizontal</enum>
+		 </property>
+		 <property name="sizeHint" stdset="0">
+		  <size>
+		   <width>40</width>
+		   <height>20</height>
+		  </size>
+		 </property>
+		</spacer>
+	   </item>
+	   <item>
+		<widget class="QPushButton" name="SpoofBtn">
+		 <property name="text">
+		  <string>Spoof</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QPushButton" name="CancelBtn">
+		 <property name="text">
+		  <string>Cancel</string>
+		 </property>
+		</widget>
+	   </item>
+	  </layout>
+	 </item>
+	</layout>
    </item>
   </layout>
  </widget>

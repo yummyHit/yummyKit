@@ -9,21 +9,21 @@
 
 class scanning_thread : public QThread
 {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    explicit scanning_thread(QObject *parent = 0);
-    void run();
-    void scanThreadSetStop(bool);
-    void scanThreadSetSys(QString, QString, int, pcap_if_t*);
+	explicit scanning_thread(QObject *parent = 0);
+	void run();
+	void scanThreadSetStop(bool);
+	void scanThreadSetSys(QString, QString, int, pcap_if_t*);
 
-    hostname *host_name;
+	hostname *host_name;
 
 signals:
-    void scanThreadSetIPList(QString);
-    void scanThreadSetLength(QStringList);
-    void scanThreadSetMacList(QString);
-    void scanThreadPacket(u_char*);
-    void scanThreadPcap(pcap_t*);
+	void scanThreadSetIPList(QString);
+	void scanThreadSetLength(QStringList);
+	void scanThreadSetMacList(QString);
+	void scanThreadPacket(u_char*);
+	void scanThreadPcap(pcap_t*);
 };
 
 #endif // SCANNING_THREAD_H

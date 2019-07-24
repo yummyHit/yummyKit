@@ -4,10 +4,10 @@
  <widget class="QDialog" name="scanning">
   <property name="geometry">
    <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>420</width>
-    <height>373</height>
+	<x>0</x>
+	<y>0</y>
+	<width>420</width>
+	<height>373</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,121 +15,121 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLineEdit" name="scanning_text">
-       <property name="text">
-        <string>Input your Router's IP Address</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QPushButton" name="StartBtn">
-         <property name="text">
-          <string>Start</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="StopBtn">
-         <property name="text">
-          <string>Stop</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="HelpBtn">
-         <property name="text">
-          <string>Help</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QTableView" name="tableView">
-         <property name="editTriggers">
-          <set>QAbstractItemView::NoEditTriggers</set>
-         </property>
-         <property name="selectionMode">
-          <enum>QAbstractItemView::SingleSelection</enum>
-         </property>
-         <property name="verticalScrollMode">
-          <enum>QAbstractItemView::ScrollPerPixel</enum>
-         </property>
-         <property name="horizontalScrollMode">
-          <enum>QAbstractItemView::ScrollPerPixel</enum>
-         </property>
-         <property name="gridStyle">
-          <enum>Qt::NoPen</enum>
-         </property>
-         <attribute name="horizontalHeaderCascadingSectionResizes">
-          <bool>true</bool>
-         </attribute>
-         <attribute name="horizontalHeaderHighlightSections">
-          <bool>false</bool>
-         </attribute>
-         <attribute name="horizontalHeaderMinimumSectionSize">
-          <number>45</number>
-         </attribute>
-         <attribute name="horizontalHeaderStretchLastSection">
-          <bool>true</bool>
-         </attribute>
-         <attribute name="verticalHeaderVisible">
-          <bool>false</bool>
-         </attribute>
-         <attribute name="verticalHeaderCascadingSectionResizes">
-          <bool>false</bool>
-         </attribute>
-         <attribute name="verticalHeaderDefaultSectionSize">
-          <number>22</number>
-         </attribute>
-         <attribute name="verticalHeaderHighlightSections">
-          <bool>false</bool>
-         </attribute>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="SelectBtn">
-         <property name="text">
-          <string>Select</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="CancelBtn">
-         <property name="text">
-          <string>Cancel</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
+	<layout class="QVBoxLayout" name="verticalLayout">
+	 <item>
+	  <widget class="QLineEdit" name="scanning_text">
+	   <property name="text">
+		<string>Input your Router's IP Address</string>
+	   </property>
+	  </widget>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout">
+	   <item>
+		<widget class="QPushButton" name="StartBtn">
+		 <property name="text">
+		  <string>Start</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QPushButton" name="StopBtn">
+		 <property name="text">
+		  <string>Stop</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QPushButton" name="HelpBtn">
+		 <property name="text">
+		  <string>Help</string>
+		 </property>
+		</widget>
+	   </item>
+	  </layout>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0">
+	   <property name="spacing">
+		<number>0</number>
+	   </property>
+	   <item>
+		<widget class="QTableView" name="tableView">
+		 <property name="editTriggers">
+		  <set>QAbstractItemView::NoEditTriggers</set>
+		 </property>
+		 <property name="selectionMode">
+		  <enum>QAbstractItemView::SingleSelection</enum>
+		 </property>
+		 <property name="verticalScrollMode">
+		  <enum>QAbstractItemView::ScrollPerPixel</enum>
+		 </property>
+		 <property name="horizontalScrollMode">
+		  <enum>QAbstractItemView::ScrollPerPixel</enum>
+		 </property>
+		 <property name="gridStyle">
+		  <enum>Qt::NoPen</enum>
+		 </property>
+		 <attribute name="horizontalHeaderCascadingSectionResizes">
+		  <bool>true</bool>
+		 </attribute>
+		 <attribute name="horizontalHeaderHighlightSections">
+		  <bool>false</bool>
+		 </attribute>
+		 <attribute name="horizontalHeaderMinimumSectionSize">
+		  <number>45</number>
+		 </attribute>
+		 <attribute name="horizontalHeaderStretchLastSection">
+		  <bool>true</bool>
+		 </attribute>
+		 <attribute name="verticalHeaderVisible">
+		  <bool>false</bool>
+		 </attribute>
+		 <attribute name="verticalHeaderCascadingSectionResizes">
+		  <bool>false</bool>
+		 </attribute>
+		 <attribute name="verticalHeaderDefaultSectionSize">
+		  <number>22</number>
+		 </attribute>
+		 <attribute name="verticalHeaderHighlightSections">
+		  <bool>false</bool>
+		 </attribute>
+		</widget>
+	   </item>
+	  </layout>
+	 </item>
+	 <item>
+	  <layout class="QHBoxLayout" name="horizontalLayout_2">
+	   <item>
+		<spacer name="horizontalSpacer">
+		 <property name="orientation">
+		  <enum>Qt::Horizontal</enum>
+		 </property>
+		 <property name="sizeHint" stdset="0">
+		  <size>
+		   <width>40</width>
+		   <height>20</height>
+		  </size>
+		 </property>
+		</spacer>
+	   </item>
+	   <item>
+		<widget class="QPushButton" name="SelectBtn">
+		 <property name="text">
+		  <string>Select</string>
+		 </property>
+		</widget>
+	   </item>
+	   <item>
+		<widget class="QPushButton" name="CancelBtn">
+		 <property name="text">
+		  <string>Cancel</string>
+		 </property>
+		</widget>
+	   </item>
+	  </layout>
+	 </item>
+	</layout>
    </item>
   </layout>
  </widget>

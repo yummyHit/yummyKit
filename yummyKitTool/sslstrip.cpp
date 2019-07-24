@@ -21,18 +21,18 @@ struct ip_addr {
    uint16_t addr_len;
    /* this must be aligned in memory */
    union {
-      uint8_t addr[MAX_IP_ADDR_LEN];
-      uint16_t addr16[MAX_IP_ADDR_LEN/2];
-      uint32_t addr32[MAX_IP_ADDR_LEN/4];
+	  uint8_t addr[MAX_IP_ADDR_LEN];
+	  uint16_t addr16[MAX_IP_ADDR_LEN/2];
+	  uint32_t addr32[MAX_IP_ADDR_LEN/4];
    };
 };
 
 struct http_ident {
-    uint32_t magic;
+	uint32_t magic;
 	#define HTTP_MAGIC 0x0501e77f
 	struct ip_addr L3_src;
-    uint16_t L4_src;
-    uint16_t L4_dst;
+	uint16_t L4_src;
+	uint16_t L4_dst;
 };
 
 #define HTTP_IDENT_LEN sizeof(struct http_ident)
@@ -57,7 +57,7 @@ struct http_response {
 
 struct http_connection {
 	int fd;
-    uint16_t port[2];
+	uint16_t port[2];
 	struct ip_addr ip[2];
 	CURL *handle;
 	struct http_request *request;

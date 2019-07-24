@@ -4,10 +4,10 @@
  <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>470</width>
-    <height>385</height>
+	<x>0</x>
+	<y>0</y>
+	<width>470</width>
+	<height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,63 +15,63 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <widget class="QListView" name="listView">
-      <property name="editTriggers">
-       <set>QAbstractItemView::NoEditTriggers</set>
-      </property>
-     </widget>
-    </item>
+	<item row="0" column="0">
+	 <widget class="QListView" name="listView">
+	  <property name="editTriggers">
+	   <set>QAbstractItemView::NoEditTriggers</set>
+	  </property>
+	 </widget>
+	</item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>470</width>
-     <height>23</height>
-    </rect>
+	<rect>
+	 <x>0</x>
+	 <y>0</y>
+	 <width>470</width>
+	 <height>23</height>
+	</rect>
    </property>
    <widget class="QMenu" name="menuRoot">
-    <property name="title">
-     <string>Root</string>
-    </property>
-    <addaction name="actionIP_Scan"/>
-    <addaction name="actionFalsify_Packet"/>
-    <addaction name="separator"/>
-    <addaction name="actionWiFi_Cracking"/>
+	<property name="title">
+	 <string>Root</string>
+	</property>
+	<addaction name="actionIP_Scan"/>
+	<addaction name="actionFalsify_Packet"/>
+	<addaction name="separator"/>
+	<addaction name="actionWiFi_Cracking"/>
    </widget>
    <widget class="QMenu" name="menuUser">
-    <property name="title">
-     <string>User</string>
-    </property>
+	<property name="title">
+	 <string>User</string>
+	</property>
    </widget>
    <addaction name="menuRoot"/>
    <addaction name="menuUser"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
+	<enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>false</bool>
+	<bool>false</bool>
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionIP_Scan">
    <property name="text">
-    <string>IP Scan</string>
+	<string>IP Scan</string>
    </property>
   </action>
   <action name="actionFalsify_Packet">
    <property name="text">
-    <string>Falsify Packet</string>
+	<string>Falsify Packet</string>
    </property>
   </action>
   <action name="actionWiFi_Cracking">
    <property name="text">
-    <string>WiFi Cracking</string>
+	<string>WiFi Cracking</string>
    </property>
   </action>
  </widget>

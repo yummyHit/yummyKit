@@ -7,13 +7,13 @@
 
 class relay_falsify : public QThread
 {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    explicit relay_falsify(QObject *parent = 0);
-    void run();
-    bool falsifyStop;
+	explicit relay_falsify(QObject *parent = 0);
+	void run();
+	bool falsifyStop;
 
-    void relayGetInfo(QString, QString, QString, QString, QString, QString, u_char*, pcap_t*);
+	void relayGetInfo(QString, QString, QString, QString, QString, QString, u_char*, pcap_t*);
 };
 
 #endif // RELAY_FALSIFY_H
