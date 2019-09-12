@@ -50,7 +50,7 @@ void scanning_thread::run() {
 
 	while(1) if(if_num == ++i) break; else alldevs = alldevs->next;
 
-#if defined(HAVE_SIOCGIFHWADDR)
+#if defined(__gnu_linux__)
 	struct ifreq ifr, ifaddr;
 	int s = socket(AF_INET, SOCK_DGRAM, 0);
 	strncpy(ifr.ifr_name, alldevs->name, IFNAMSIZ-1);
@@ -63,7 +63,7 @@ void scanning_thread::run() {
 	close(s);
 
 	ip_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), my_ip);
-#elif defined(HAVE_GETIFADDRS)
+#elif defined(__APPLE__)
 	#include <net/if.h>
 	#include <net/if_dl.h>
 	#include <ifaddrs.h>

@@ -216,7 +216,7 @@ void scanning::findDevs() {
 
 	if(pcap_findalldevs(&devs, errbuf) == -1) QMessageBox::warning(this, "Warning!!", "Check your Network Interface Card!!");
 	else for(tmp = devs; tmp; tmp = tmp->next) {
-#if defined(HAVE_SIOCGIFHWADDR)
+#if defined(__gnu_linux__)
 		struct ifreq ifaddr;
 		int s = socket(AF_INET, SOCK_DGRAM, 0);
 		memset(ifaddr.ifr_name, '\0', IFNAMSIZ-1);
@@ -226,7 +226,7 @@ void scanning::findDevs() {
 		ioctl(s, SIOCGIFADDR, &ifaddr);
 		index_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), ip_tmp);
 		shutdown(s, SHUT_RDWR);
-#elif defined(HAVE_GETIFADDRS)
+#elif defined(__APPLE__)
 		#include <net/if.h>
 		#include <net/if_dl.h>
 		#include <ifaddrs.h>
