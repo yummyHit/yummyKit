@@ -25,6 +25,7 @@
 	#define PATH_MAX 1024
 #endif
 
+#if defined(__gnu_linux__)
 /*
  * List definitions.
  */
@@ -105,6 +106,7 @@ struct {																\
 		(elm2)->field.le_prev = (elm)->field.le_prev;				   \
 		*(elm2)->field.le_prev = (elm2);								\
 } while (0)
+#endif
 
 int popen_used(const char *cmd, char *buf, size_t buf_len);
 void pre_filter(char *get, u_char *my, int size, const char *cap);

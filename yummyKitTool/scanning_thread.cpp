@@ -40,7 +40,6 @@ void scanning_thread::run() {
 	unsigned i = 0, broad_cnt = 0;
 	bpf_u_int32 netp, maskp;
 	struct bpf_program filtering;
-	struct ifreq ifr, ifaddr;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *pcap;
 	struct pcap_pkthdr *pkthdr;
@@ -52,6 +51,8 @@ void scanning_thread::run() {
 
 	while(1) if(if_num == ++i) break; else alldevs = alldevs->next;
 
+#if defined(HAVE_SIOCGIFHWADDR)
+	struct ifreq ifr, ifaddr;
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	strncpy(ifr.ifr_name, alldevs->name, IFNAMSIZ-1);
 	ioctl(s, SIOCGIFHWADDR, &ifr);
@@ -63,6 +64,36 @@ void scanning_thread::run() {
 	close(s);
 
 	ip_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), my_ip);
+#elif defined(HAVE_GETIFADDRS)
+	#include <net/if.h>
+	#include <net/if_dl.h>
+	#include <ifaddrs.h>
+
+	struct ifaddrs *if_addr = NULL, *if_addrs = NULL;
+
+	if(!getifaddrs(&if_addrs))
+		for(if_addr = if_addrs; if_addr != NULL; if_addr = if_addr->ifa_next) {
+			if(!strncmp(alldevs->name, if_addr->ifa_name, strlen(alldevs->name)))
+				if(if_addr->ifa_addr != NULL && if_addr->ifa_addr->sa_family == AF_LINK) {
+					struct sockaddr_dl* sdl = (struct sockaddr_dl *)if_addr->ifa_addr;
+					if(sdl->sdl_alen == ETHER_ADDR_LEN)
+						strncpy(my_mac, LLADDR(sdl), sdl->sdl_alen);
+				}
+
+			if(if_addr->ifa_addr->sa_family == AF_INET)
+				ip_filter(inet_ntoa(((struct sockaddr_in *)if_addr->ifa_addr)->sin_addr), my_ip);
+		}
+
+	if(if_addrs) {
+		memset(if_addrs, 0, sizeof(struct ifaddrs));
+		freeifaddrs(if_addrs);
+		if_addrs = NULL;
+	}
+#else
+	perror("SIOCGIFHWADDR and GETIFADDRS");
+	host_name->host_stop = true;
+	pcap_stop = true;
+#endif
 	ip_filter(sys_ipv.toLatin1().data(), router_ip);
 	sys_ipv.clear();
 

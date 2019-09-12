@@ -43,7 +43,7 @@ SOURCES += main.cpp\
 	scanning_thread.cpp \
 	common_func.cpp \
 	get_gateway.cpp \
-	sslstrip.cpp \
+#	sslstrip.cpp \
 	bruteforce.cpp
 
 HEADERS  += mainwindow.h \
@@ -57,7 +57,7 @@ HEADERS  += mainwindow.h \
 	scanning_thread.h \
 	common_func.h \
 	get_gateway.h \
-	sslstrip.h \
+#	sslstrip.h \
 	bruteforce.h \
 #	statusq.h \
 

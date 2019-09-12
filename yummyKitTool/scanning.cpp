@@ -16,18 +16,21 @@ bool scan_stop;
 
 scanning::scanning(QWidget *parent) : QDialog(parent), ui(new Ui::scanning) {
 	ui->setupUi(this);
-	get_gateway route;
 	char buf[20] = {0,};
 
-//	popen_used("route -n | grep -i ug | awk '{ print $2 }'", buf, sizeof(buf));
-//	popen_used("id | awk '{print $1}' | cut -d '=' -f2- | awk -F\\( '{print $1}'", buf, sizeof(buf));
-//	if(strncmp(buf, "0", 1)) {
 	if(getuid() != 0) {
 		QMessageBox::critical(this, "UID Error!!", "Your UID is not 0.\nYou must open yummyKit program with UID 0 account!!");
 		exit(1);
 	}
 
+#if defined(__gnu_linux__)
+	get_gateway route;
 	route.get_route_ip(buf, sizeof(buf));
+#else
+	popen_used("netstat -nr | grep UG | awk '{print $2}' | egrep '((.*)\.(.*)\.(.*)\.(.*))'", buf, sizeof(buf));
+	if(buf)
+		popen_used("ss -nr | grep UG | awk '{print $2}' | egrep '((.*)\.(.*)\.(.*)\.(.*))'", buf, sizeof(buf));
+#endif
 	if(strlen(buf) <= 1) {
 		ui->StartBtn->setEnabled(false);
 		ui->scanning_text->setText("You are not connect to Network. Click \'Help\' Button.");
@@ -210,17 +213,31 @@ void scanning::findDevs() {
 	char errbuf[256] = {0,};
 	u_char ip_tmp[IP_ADDR_LEN] = {0,};
 	int i = 0;
-	struct ifreq ifaddr;
-	int s = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if(pcap_findalldevs(&devs, errbuf) == -1) QMessageBox::warning(this, "Warning!!", "Check your Network Interface Card!!");
 	else for(tmp = devs; tmp; tmp = tmp->next) {
+#if defined(HAVE_SIOCGIFHWADDR)
+		struct ifreq ifaddr;
+		int s = socket(AF_INET, SOCK_DGRAM, 0);
 		memset(ifaddr.ifr_name, '\0', IFNAMSIZ-1);
 		memset(ip_tmp, '\0', IP_ADDR_LEN);
 		ifaddr.ifr_addr.sa_family = AF_INET;
 		strncpy(ifaddr.ifr_name, tmp->name, IFNAMSIZ-1);
 		ioctl(s, SIOCGIFADDR, &ifaddr);
 		index_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), ip_tmp);
+#elif defined(HAVE_GETIFADDRS)
+		#include <net/if.h>
+		#include <net/if_dl.h>
+		#include <ifaddrs.h>
+		struct ifaddrs *if_addr = NULL, *if_addrs = NULL;
+		if(!getifaddrs(&if_addrs))
+			for(if_addr = if_addrs; if_addr != NULL; if_addr = if_addr->ifa_next) {
+				if(if_addr->ifa_addr->sa_family == AF_INET)
+					index_filter(inet_ntoa(((struct sockaddr_in *)if_addr->ifa_addr)->sin_addr), ip_tmp);
+#else
+		QMessageBox::critical(this, "Failed!!", "Network Interface Card not found!");
+		scan_stop = true;
+#endif
 		md_host = new QStandardItem(QString::fromStdString(tmp->name));
 		if(ip_tmp) simod->setItem(i, 0, new QStandardItem(getIndexString(ip_tmp)));
 		else simod->setItem(i, 0, new QStandardItem(QString("None")));
