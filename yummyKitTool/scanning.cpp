@@ -225,6 +225,7 @@ void scanning::findDevs() {
 		strncpy(ifaddr.ifr_name, tmp->name, IFNAMSIZ-1);
 		ioctl(s, SIOCGIFADDR, &ifaddr);
 		index_filter(inet_ntoa(((struct sockaddr_in *)&ifaddr.ifr_addr)->sin_addr), ip_tmp);
+		shutdown(s, SHUT_RDWR);
 #elif defined(HAVE_GETIFADDRS)
 		#include <net/if.h>
 		#include <net/if_dl.h>
@@ -243,8 +244,6 @@ void scanning::findDevs() {
 		else simod->setItem(i, 0, new QStandardItem(QString("None")));
 		simod->setItem(i++, 1, md_host);
 	}
-
-	shutdown(s, SHUT_RDWR);
 }
 
 void index_filter(char *get, u_char *my) {

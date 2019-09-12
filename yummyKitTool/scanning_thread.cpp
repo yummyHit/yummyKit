@@ -36,7 +36,6 @@ scanning_thread::scanning_thread(QObject *parent) : QThread(parent) {
 void scanning_thread::run() {
 	QTime time_scan;
 	bool break_point;
-	int s = 0;
 	unsigned i = 0, broad_cnt = 0;
 	bpf_u_int32 netp, maskp;
 	struct bpf_program filtering;
@@ -53,7 +52,7 @@ void scanning_thread::run() {
 
 #if defined(HAVE_SIOCGIFHWADDR)
 	struct ifreq ifr, ifaddr;
-	s = socket(AF_INET, SOCK_DGRAM, 0);
+	int s = socket(AF_INET, SOCK_DGRAM, 0);
 	strncpy(ifr.ifr_name, alldevs->name, IFNAMSIZ-1);
 	ioctl(s, SIOCGIFHWADDR, &ifr);
 	for(i = 0; i < ETHER_ADDR_LEN; i++) mac.append(ifr.ifr_hwaddr.sa_data[i]);
@@ -112,13 +111,12 @@ void scanning_thread::run() {
 		break_point = false;
 
 		if(!sys.isEmpty()) {
-			// s var is used for ignore warning. Actually it is unused.
-			s = system(sys.toStdString().c_str());
+			system(sys.toStdString().c_str());
 			sys.clear();
 			usleep(50000);
-			s = system("ping 8.8.8.8 -c 1 >/dev/null 2>&1");
+			system("ping 8.8.8.8 -c 1 >/dev/null 2>&1");
 			usleep(50000);
-			s = system("arp -a >/dev/null");
+			system("arp -a >/dev/null");
 		}
 
 		while(pcap_next_ex(pcap, &pkthdr, (const u_char**)&packet) > 0) {
